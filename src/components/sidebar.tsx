@@ -13,11 +13,10 @@ import {
   LogOut,
   AlertCircle,
   NotebookPen,
+  Settings,
 } from "lucide-react";
 import { useState } from "react";
 import { clearDevToken } from "@/lib/msal";
-
-const CURRENT_YEAR = "2026";
 
 interface ClassNotebook {
   groupId: string;
@@ -26,9 +25,15 @@ interface ClassNotebook {
 }
 
 export function Sidebar() {
-  const { sidebarOpen, toggleSidebar, selectedNotebook, setSelectedNotebook, setAuth } =
-    useAppStore();
-  const [showOlderClasses, setShowOlderClasses] = useState(false);
+  const {
+    sidebarOpen,
+    toggleSidebar,
+    selectedNotebook,
+    setSelectedNotebook,
+    setAuth,
+    hiddenGroupIds,
+    setShowSettings,
+  } = useAppStore();
 
   const {
     data: personalNotebooks,
@@ -56,7 +61,6 @@ export function Sidebar() {
           g.resourceProvisioningOptions?.includes("Team")
       );
 
-      // Fetch notebooks in parallel instead of sequentially
       const results = await Promise.allSettled(
         classGroups.map(async (group) => {
           const notebooks = await graphClient.getGroupNotebooks(group.id);
@@ -74,13 +78,11 @@ export function Sidebar() {
     },
   });
 
-  // Split class notebooks into current year and older
-  const currentClassNotebooks = (classNotebooks ?? []).filter((cn) =>
-    cn.groupName?.includes(CURRENT_YEAR)
+  // Filter out hidden classes
+  const visibleClassNotebooks = (classNotebooks ?? []).filter(
+    (cn) => !hiddenGroupIds.has(cn.groupId)
   );
-  const olderClassNotebooks = (classNotebooks ?? []).filter(
-    (cn) => !cn.groupName?.includes(CURRENT_YEAR)
-  );
+  const hiddenCount = (classNotebooks ?? []).length - visibleClassNotebooks.length;
 
   const handleLogout = () => {
     clearDevToken();
@@ -106,12 +108,21 @@ export function Sidebar() {
           <img src="/unnote.svg" alt="UnNote" className="h-6 w-6" />
           <h2 className="text-lg font-semibold text-sidebar-foreground">UnNote</h2>
         </div>
-        <button
-          onClick={toggleSidebar}
-          className="rounded-md p-1.5 hover:bg-sidebar-accent"
-        >
-          <PanelLeftClose className="h-4 w-4 text-sidebar-foreground" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="rounded-md p-1.5 hover:bg-sidebar-accent transition-colors"
+            title="Manage classes"
+          >
+            <Settings className="h-4 w-4 text-sidebar-foreground" />
+          </button>
+          <button
+            onClick={toggleSidebar}
+            className="rounded-md p-1.5 hover:bg-sidebar-accent transition-colors"
+          >
+            <PanelLeftClose className="h-4 w-4 text-sidebar-foreground" />
+          </button>
+        </div>
       </div>
 
       {/* Notebook List */}
@@ -131,7 +142,7 @@ export function Sidebar() {
           />
         )}
 
-        {/* Class Notebooks — loads independently */}
+        {/* Class Notebooks */}
         {loadingClasses ? (
           <LoadingIndicator label="Loading classes..." />
         ) : classError ? (
@@ -141,44 +152,20 @@ export function Sidebar() {
             <NotebookGroup
               label="Classes"
               icon={<GraduationCap className="h-4 w-4" />}
-              notebooks={currentClassNotebooks.map((cn) => ({
+              notebooks={visibleClassNotebooks.map((cn) => ({
                 ...cn.notebook,
                 groupId: cn.groupId,
               }))}
               selectedId={selectedNotebook?.id ?? null}
               onSelect={(nb) => setSelectedNotebook(nb)}
             />
-            {olderClassNotebooks.length > 0 && (
-              <>
-                {showOlderClasses ? (
-                  <>
-                    <NotebookGroup
-                      label="Older Classes"
-                      icon={<GraduationCap className="h-4 w-4" />}
-                      notebooks={olderClassNotebooks.map((cn) => ({
-                        ...cn.notebook,
-                        groupId: cn.groupId,
-                      }))}
-                      selectedId={selectedNotebook?.id ?? null}
-                      onSelect={(nb) => setSelectedNotebook(nb)}
-                      defaultExpanded={false}
-                    />
-                    <button
-                      onClick={() => setShowOlderClasses(false)}
-                      className="ml-2 mt-1 text-xs text-muted-foreground hover:text-sidebar-foreground transition-colors"
-                    >
-                      Hide older classes
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={() => setShowOlderClasses(true)}
-                    className="ml-2 mt-1 text-xs text-muted-foreground hover:text-sidebar-foreground transition-colors"
-                  >
-                    Show older classes ({olderClassNotebooks.length})
-                  </button>
-                )}
-              </>
+            {hiddenCount > 0 && (
+              <button
+                onClick={() => setShowSettings(true)}
+                className="ml-2 mt-1 text-xs text-muted-foreground hover:text-sidebar-foreground transition-colors"
+              >
+                {hiddenCount} hidden class{hiddenCount !== 1 ? "es" : ""}
+              </button>
             )}
           </>
         )}

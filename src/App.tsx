@@ -5,6 +5,7 @@ import { useAppStore } from "@/stores/app-store";
 import { Sidebar } from "@/components/sidebar";
 import { PageViewer } from "@/components/page-viewer";
 import { LoginScreen } from "@/components/login-screen";
+import { ClassManager } from "@/components/class-manager";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
@@ -18,10 +19,12 @@ const queryClient = new QueryClient({
 
 export default function App() {
   const [initializing, setInitializing] = useState(true);
-  const { isAuthenticated, setAuth } = useAppStore();
+  const { isAuthenticated, setAuth, loadSettings } = useAppStore();
 
   useEffect(() => {
     msalInstance.initialize().then(async () => {
+      // Load persisted settings
+      await loadSettings();
       // Handle redirect response after login
       try {
         const response = await msalInstance.handleRedirectPromise();
@@ -58,6 +61,7 @@ export default function App() {
       <div className="flex h-screen overflow-hidden bg-background">
         <Sidebar />
         <PageViewer />
+        <ClassManager />
       </div>
     </QueryClientProvider>
   );

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { Notebook, Section, SectionGroup, Page } from "@/lib/graph";
+import { getSetting, setSetting } from "@/lib/settings";
 
 export interface ClassNotebookInfo {
   groupId: string;
@@ -27,9 +28,18 @@ interface AppState {
   // Sidebar
   sidebarOpen: boolean;
   toggleSidebar: () => void;
+
+  // Hidden notebooks (persisted via Tauri Store)
+  hiddenGroupIds: Set<string>;
+  toggleHiddenGroup: (groupId: string) => void;
+  loadSettings: () => Promise<void>;
+
+  // Settings panel
+  showSettings: boolean;
+  setShowSettings: (show: boolean) => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
+export const useAppStore = create<AppState>((set, get) => ({
   isAuthenticated: false,
   userName: null,
   setAuth: (authenticated, name) =>
@@ -59,4 +69,25 @@ export const useAppStore = create<AppState>((set) => ({
 
   sidebarOpen: true,
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+
+  hiddenGroupIds: new Set(),
+  toggleHiddenGroup: async (groupId) => {
+    const current = get().hiddenGroupIds;
+    const next = new Set(current);
+    if (next.has(groupId)) {
+      next.delete(groupId);
+    } else {
+      next.add(groupId);
+    }
+    set({ hiddenGroupIds: next });
+    await setSetting("hiddenGroupIds", [...next]);
+  },
+
+  loadSettings: async () => {
+    const hiddenIds = await getSetting("hiddenGroupIds");
+    set({ hiddenGroupIds: new Set(hiddenIds) });
+  },
+
+  showSettings: false,
+  setShowSettings: (show) => set({ showSettings: show }),
 }));
