@@ -6,20 +6,26 @@ import DOMPurify from "dompurify";
 import { useEffect, useRef } from "react";
 import { getAccessToken } from "@/lib/msal";
 
-// Convert OneNote absolute positioning to normal document flow
 function normalizeOneNoteHtml(html: string): string {
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   let content = bodyMatch?.[1] ?? html;
 
-  // Remove absolute positioning from inline styles
   content = content.replace(/position:\s*absolute\s*;?/gi, "");
   content = content.replace(/left:\s*[\d.]+px\s*;?/gi, "");
   content = content.replace(/top:\s*[\d.]+px\s*;?/gi, "");
-
-  // Remove data-absolute-enabled
   content = content.replace(/data-absolute-enabled="[^"]*"/gi, "");
 
   return content;
+}
+
+function formatPageDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-AU", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 export function PageViewer() {
@@ -40,7 +46,6 @@ export function PageViewer() {
     enabled: !!selectedPage,
   });
 
-  // Handle image authentication - replace Graph API image URLs with blob URLs
   useEffect(() => {
     if (!contentRef.current || !html) return;
 
@@ -58,16 +63,14 @@ export function PageViewer() {
         });
         if (response.ok) {
           const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          img.setAttribute("src", blobUrl);
+          img.setAttribute("src", URL.createObjectURL(blob));
         }
       } catch {
-        // Image load failed silently
+        // silently ignore
       }
     });
 
     return () => {
-      // Cleanup blob URLs
       const images = contentRef.current?.querySelectorAll("img[src^='blob:']");
       images?.forEach((img) => {
         const src = img.getAttribute("src");
@@ -78,10 +81,10 @@ export function PageViewer() {
 
   if (!selectedPage) {
     return (
-      <div className="flex flex-1 items-center justify-center bg-muted/30">
-        <div className="flex flex-col items-center gap-4 text-muted-foreground">
-          <img src="/unnote.svg" alt="UnNote" className="h-16 w-16 opacity-40" />
-          <p className="text-lg">Select a page to view</p>
+      <div className="flex flex-1 items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <img src="/unnote.svg" alt="UnNote" className="h-12 w-12 opacity-30" />
+          <p className="text-sm">Select a page to view</p>
         </div>
       </div>
     );
@@ -89,52 +92,48 @@ export function PageViewer() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex flex-1 items-center justify-center bg-background">
+        <Loader2 className="h-7 w-7 animate-spin text-primary" />
       </div>
     );
   }
 
   if (!html) {
     return (
-      <div className="flex flex-1 items-center justify-center text-muted-foreground">
+      <div className="flex flex-1 items-center justify-center bg-background text-sm text-muted-foreground">
         Failed to load page content
       </div>
     );
   }
 
-  // Normalize OneNote HTML (strip absolute positioning) then sanitize
   const normalizedContent = normalizeOneNoteHtml(html);
-
   const sanitized = DOMPurify.sanitize(normalizedContent, {
     ADD_TAGS: ["meta"],
-    ADD_ATTR: [
-      "data-id",
-      "data-src-type",
-      "data-fullres-src",
-      "data-fullres-src-type",
-      "style",
-    ],
+    ADD_ATTR: ["data-id", "data-src-type", "data-fullres-src", "data-fullres-src-type", "style"],
   });
 
   return (
-    <main className="flex-1 overflow-auto bg-muted/20">
-      {/* Page title bar */}
-      <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur px-6 py-3">
-        <h1 className="text-lg font-semibold">{selectedPage.title || "Untitled"}</h1>
-        <p className="text-xs text-muted-foreground">
-          Last modified{" "}
-          {new Date(selectedPage.lastModifiedDateTime).toLocaleDateString()}
-        </p>
-      </div>
+    <main className="flex flex-1 flex-col overflow-hidden bg-background">
+      <div className="flex-1 overflow-y-auto">
+        {/* Page title area — matches OneNote's content-level title */}
+        <div className="mx-auto max-w-4xl px-10 pb-0 pt-8">
+          <h1 className="text-2xl font-semibold leading-tight text-foreground">
+            {selectedPage.title || "Untitled"}
+          </h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {formatPageDate(selectedPage.lastModifiedDateTime)}
+          </p>
+          <hr className="mt-3 border-border" />
+        </div>
 
-      {/* Page content */}
-      <div
-        ref={contentRef}
-        className="onenote-content relative mx-auto max-w-4xl bg-background px-8 py-8 shadow-sm min-h-full"
-        style={{ fontFamily: 'Calibri, "Segoe UI", system-ui, sans-serif', fontSize: "14.5px" }}
-        dangerouslySetInnerHTML={{ __html: sanitized }}
-      />
+        {/* OneNote HTML content */}
+        <div
+          ref={contentRef}
+          className="onenote-content mx-auto max-w-4xl px-10 py-6"
+          style={{ fontFamily: 'Calibri, "Segoe UI", system-ui, sans-serif', fontSize: "14.5px" }}
+          dangerouslySetInnerHTML={{ __html: sanitized }}
+        />
+      </div>
     </main>
   );
 }

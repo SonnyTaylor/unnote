@@ -4,10 +4,17 @@ import { msalInstance } from "@/lib/msal";
 import { useAppStore } from "@/stores/app-store";
 import { applyTheme } from "@/lib/themes";
 import { Sidebar } from "@/components/sidebar";
+import { PagePanel } from "@/components/page-panel";
 import { PageViewer } from "@/components/page-viewer";
 import { LoginScreen } from "@/components/login-screen";
 import { ClassManager } from "@/components/class-manager";
+import { ResizeHandle } from "@/components/resize-handle";
 import { Loader2 } from "lucide-react";
+
+const SIDEBAR_MIN = 140;
+const SIDEBAR_MAX = 420;
+const PANEL_MIN = 140;
+const PANEL_MAX = 420;
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,7 +27,18 @@ const queryClient = new QueryClient({
 
 export default function App() {
   const [initializing, setInitializing] = useState(true);
-  const { isAuthenticated, setAuth, loadSettings, themeMode, currentTheme } = useAppStore();
+  const {
+    isAuthenticated,
+    setAuth,
+    loadSettings,
+    themeMode,
+    currentTheme,
+    sidebarWidth,
+    pagePanelWidth,
+    setSidebarWidth,
+    setPagePanelWidth,
+    savePanelWidths,
+  } = useAppStore();
 
   // Re-apply theme when system preference changes (for "system" mode)
   useEffect(() => {
@@ -69,7 +87,20 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="flex h-screen overflow-hidden bg-background">
-        <Sidebar />
+        <Sidebar width={sidebarWidth} />
+        <ResizeHandle
+          onDelta={(d) =>
+            setSidebarWidth(Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, useAppStore.getState().sidebarWidth + d)))
+          }
+          onEnd={savePanelWidths}
+        />
+        <PagePanel width={pagePanelWidth} />
+        <ResizeHandle
+          onDelta={(d) =>
+            setPagePanelWidth(Math.max(PANEL_MIN, Math.min(PANEL_MAX, useAppStore.getState().pagePanelWidth + d)))
+          }
+          onEnd={savePanelWidths}
+        />
         <PageViewer />
         <ClassManager />
       </div>

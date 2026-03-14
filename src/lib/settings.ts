@@ -4,12 +4,16 @@ export interface AppSettings {
   hiddenGroupIds: string[];
   theme: string;
   themeMode: "light" | "dark" | "system";
+  sidebarWidth: number;
+  pagePanelWidth: number;
 }
 
 const DEFAULTS: AppSettings = {
   hiddenGroupIds: [],
   theme: "unnote",
   themeMode: "system",
+  sidebarWidth: 208,
+  pagePanelWidth: 224,
 };
 
 let store: Awaited<ReturnType<typeof load>> | null = null;

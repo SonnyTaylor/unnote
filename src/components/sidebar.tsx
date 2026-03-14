@@ -3,19 +3,15 @@ import { graphClient, type Notebook } from "@/lib/graph";
 import { useAppStore } from "@/stores/app-store";
 import { SectionList } from "./section-list";
 import {
-  BookOpen,
   ChevronDown,
   ChevronRight,
-  GraduationCap,
   Loader2,
   PanelLeftClose,
   PanelLeft,
   LogOut,
   AlertCircle,
-  NotebookPen,
   Settings,
 } from "lucide-react";
-import { useState } from "react";
 import { clearDevToken } from "@/lib/msal";
 
 interface ClassNotebook {
@@ -24,7 +20,26 @@ interface ClassNotebook {
   notebook: Notebook;
 }
 
-export function Sidebar() {
+const NOTEBOOK_COLORS = [
+  "#7B2D8B",
+  "#D45D00",
+  "#0078D4",
+  "#107C10",
+  "#C50F1F",
+  "#038387",
+  "#8764B8",
+  "#D13438",
+  "#00B294",
+  "#6B69D6",
+  "#E3008C",
+  "#004B50",
+];
+
+function getNotebookColor(index: number) {
+  return NOTEBOOK_COLORS[index % NOTEBOOK_COLORS.length];
+}
+
+export function Sidebar({ width }: { width: number }) {
   const {
     sidebarOpen,
     toggleSidebar,
@@ -78,7 +93,6 @@ export function Sidebar() {
     },
   });
 
-  // Filter out hidden classes
   const visibleClassNotebooks = (classNotebooks ?? []).filter(
     (cn) => !hiddenGroupIds.has(cn.groupId)
   );
@@ -94,93 +108,103 @@ export function Sidebar() {
       <button
         onClick={toggleSidebar}
         className="fixed left-2 top-2 z-50 rounded-md p-2 hover:bg-accent"
+        title="Open sidebar"
       >
         <PanelLeft className="h-5 w-5" />
       </button>
     );
   }
 
+  const allPersonal = personalNotebooks ?? [];
+  const allClass = visibleClassNotebooks.map((cn) => ({
+    ...cn.notebook,
+    groupId: cn.groupId,
+  }));
+
   return (
-    <aside className="flex h-full w-72 flex-col border-r border-sidebar-border bg-sidebar-background">
+    <aside className="flex h-full flex-col border-r border-sidebar-border bg-sidebar-background overflow-hidden" style={{ width, minWidth: width }}>
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-sidebar-border px-4 py-3">
+      <div className="flex items-center justify-between border-b border-sidebar-border px-3 py-2.5">
         <div className="flex items-center gap-2">
-          <img src="/unnote.svg" alt="UnNote" className="h-6 w-6" />
-          <h2 className="text-lg font-semibold text-sidebar-foreground">UnNote</h2>
+          <img src="/unnote.svg" alt="UnNote" className="h-5 w-5" />
+          <span className="text-sm font-semibold text-sidebar-foreground">UnNote</span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             onClick={() => setShowSettings(true)}
-            className="rounded-md p-1.5 hover:bg-sidebar-accent transition-colors"
-            title="Manage classes"
+            className="rounded p-1.5 hover:bg-sidebar-accent transition-colors"
+            title="Settings"
           >
-            <Settings className="h-4 w-4 text-sidebar-foreground" />
+            <Settings className="h-3.5 w-3.5 text-sidebar-foreground/60" />
           </button>
           <button
             onClick={toggleSidebar}
-            className="rounded-md p-1.5 hover:bg-sidebar-accent transition-colors"
+            className="rounded p-1.5 hover:bg-sidebar-accent transition-colors"
+            title="Collapse sidebar"
           >
-            <PanelLeftClose className="h-4 w-4 text-sidebar-foreground" />
+            <PanelLeftClose className="h-3.5 w-3.5 text-sidebar-foreground/60" />
           </button>
         </div>
       </div>
 
-      {/* Notebook List */}
-      <div className="flex-1 overflow-y-auto px-2 py-2">
-        {/* Personal Notebooks */}
+      {/* Notebook list */}
+      <div className="flex-1 overflow-y-auto py-1.5">
+        {/* Personal notebooks */}
         {loadingPersonal ? (
-          <LoadingIndicator label="Loading notebooks..." />
+          <SectionLabel label="Personal" loading />
         ) : personalError ? (
-          <ErrorIndicator message="Failed to load personal notebooks" />
-        ) : (
-          <NotebookGroup
-            label="Personal"
-            icon={<BookOpen className="h-4 w-4" />}
-            notebooks={personalNotebooks ?? []}
-            selectedId={selectedNotebook?.id ?? null}
-            onSelect={(nb) => setSelectedNotebook(nb)}
-          />
-        )}
-
-        {/* Class Notebooks */}
-        {loadingClasses ? (
-          <LoadingIndicator label="Loading classes..." />
-        ) : classError ? (
-          <ErrorIndicator message="Failed to load class notebooks" />
-        ) : (
+          <ErrorRow message="Failed to load notebooks" />
+        ) : allPersonal.length > 0 ? (
           <>
-            <NotebookGroup
-              label="Classes"
-              icon={<GraduationCap className="h-4 w-4" />}
-              notebooks={visibleClassNotebooks.map((cn) => ({
-                ...cn.notebook,
-                groupId: cn.groupId,
-              }))}
-              selectedId={selectedNotebook?.id ?? null}
-              onSelect={(nb) => setSelectedNotebook(nb)}
-            />
+            <SectionLabel label="Personal" />
+            {allPersonal.map((nb, i) => (
+              <NotebookItem
+                key={nb.id}
+                notebook={nb}
+                color={getNotebookColor(i)}
+                isSelected={selectedNotebook?.id === nb.id}
+                onSelect={() => setSelectedNotebook(nb)}
+              />
+            ))}
+          </>
+        ) : null}
+
+        {/* Class notebooks */}
+        {loadingClasses ? (
+          <SectionLabel label="Classes" loading />
+        ) : classError ? (
+          <ErrorRow message="Failed to load classes" />
+        ) : allClass.length > 0 ? (
+          <>
+            <SectionLabel label="Classes" />
+            {allClass.map((nb, i) => (
+              <NotebookItem
+                key={nb.id}
+                notebook={nb}
+                color={getNotebookColor(allPersonal.length + i)}
+                isSelected={selectedNotebook?.id === nb.id}
+                onSelect={() => setSelectedNotebook(nb)}
+              />
+            ))}
             {hiddenCount > 0 && (
               <button
                 onClick={() => setShowSettings(true)}
-                className="ml-2 mt-1 text-xs text-muted-foreground hover:text-sidebar-foreground transition-colors"
+                className="mx-2 mt-1 text-[11px] text-muted-foreground hover:text-sidebar-foreground transition-colors"
               >
-                {hiddenCount} hidden class{hiddenCount !== 1 ? "es" : ""}
+                +{hiddenCount} hidden
               </button>
             )}
           </>
-        )}
-
-        {/* Section list for selected notebook */}
-        {selectedNotebook && <SectionList />}
+        ) : null}
       </div>
 
       {/* Footer */}
-      <div className="border-t border-sidebar-border px-4 py-3">
+      <div className="border-t border-sidebar-border px-2 py-2">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-3.5 w-3.5" />
           Sign out
         </button>
       </div>
@@ -188,76 +212,67 @@ export function Sidebar() {
   );
 }
 
-function LoadingIndicator({ label }: { label: string }) {
+function SectionLabel({ label, loading }: { label: string; loading?: boolean }) {
   return (
-    <div className="flex items-center gap-2 px-2 py-3 text-sm text-muted-foreground">
-      <Loader2 className="h-4 w-4 animate-spin" />
-      {label}
+    <div className="flex items-center gap-1.5 px-3 pb-0.5 pt-2.5">
+      {loading && <Loader2 className="h-2.5 w-2.5 animate-spin text-muted-foreground" />}
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </span>
     </div>
   );
 }
 
-function ErrorIndicator({ message }: { message: string }) {
+function ErrorRow({ message }: { message: string }) {
   return (
-    <div className="flex items-center gap-2 px-2 py-3 text-sm text-destructive">
-      <AlertCircle className="h-4 w-4" />
+    <div className="flex items-center gap-2 px-3 py-2 text-xs text-destructive">
+      <AlertCircle className="h-3 w-3" />
       {message}
     </div>
   );
 }
 
-function NotebookGroup({
-  label,
-  icon,
-  notebooks,
-  selectedId,
+function NotebookItem({
+  notebook,
+  color,
+  isSelected,
   onSelect,
-  defaultExpanded = true,
 }: {
-  label: string;
-  icon: React.ReactNode;
-  notebooks: (Notebook & { groupId?: string })[];
-  selectedId: string | null;
-  onSelect: (nb: Notebook & { groupId?: string }) => void;
-  defaultExpanded?: boolean;
+  notebook: Notebook & { groupId?: string };
+  color: string;
+  isSelected: boolean;
+  onSelect: () => void;
 }) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
-
-  if (notebooks.length === 0) return null;
-
   return (
-    <div className="mb-2">
+    <div>
       <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-sidebar-accent"
+        onClick={onSelect}
+        className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 mx-1 text-xs transition-colors ${
+          isSelected
+            ? "bg-sidebar-accent text-sidebar-foreground"
+            : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+        }`}
+        style={{ width: "calc(100% - 8px)" }}
       >
-        {expanded ? (
-          <ChevronDown className="h-3 w-3" />
-        ) : (
-          <ChevronRight className="h-3 w-3" />
-        )}
-        {icon}
-        {label}
-        <span className="ml-auto rounded-full bg-sidebar-accent px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-          {notebooks.length}
+        {/* Colored notebook icon */}
+        <span
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-[9px] font-bold text-white"
+          style={{ backgroundColor: color }}
+        >
+          {notebook.displayName.charAt(0).toUpperCase()}
         </span>
+        <span className="flex-1 truncate text-left">{notebook.displayName}</span>
+        {isSelected ? (
+          <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+        )}
       </button>
-      {expanded && (
-        <div className="ml-2 mt-1 space-y-0.5">
-          {notebooks.map((nb) => (
-            <button
-              key={nb.id}
-              onClick={() => onSelect(nb)}
-              className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${
-                selectedId === nb.id
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent"
-              }`}
-            >
-              <NotebookPen className="h-3.5 w-3.5 shrink-0 opacity-60" />
-              <span className="truncate">{nb.displayName}</span>
-            </button>
-          ))}
+
+      {/* Section tree expands inline under the notebook */}
+      {isSelected && (
+        <div className="mb-1">
+          <SectionList notebookColor={color} />
         </div>
       )}
     </div>

@@ -41,6 +41,13 @@ interface AppState {
   setTheme: (themeId: string) => void;
   setThemeMode: (mode: "light" | "dark" | "system") => void;
 
+  // Panel widths (persisted)
+  sidebarWidth: number;
+  pagePanelWidth: number;
+  setSidebarWidth: (w: number) => void;
+  setPagePanelWidth: (w: number) => void;
+  savePanelWidths: () => Promise<void>;
+
   // Settings panel
   showSettings: boolean;
   setShowSettings: (show: boolean) => void;
@@ -94,7 +101,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     const hiddenIds = await getSetting("hiddenGroupIds");
     const theme = await getSetting("theme");
     const themeMode = await getSetting("themeMode");
-    set({ hiddenGroupIds: new Set(hiddenIds), currentTheme: theme, themeMode });
+    const sidebarWidth = await getSetting("sidebarWidth");
+    const pagePanelWidth = await getSetting("pagePanelWidth");
+    set({ hiddenGroupIds: new Set(hiddenIds), currentTheme: theme, themeMode, sidebarWidth, pagePanelWidth });
     applyTheme(theme, themeMode);
   },
 
@@ -111,6 +120,16 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ themeMode: mode });
     applyTheme(themeId, mode);
     await setSetting("themeMode", mode);
+  },
+
+  sidebarWidth: 208,
+  pagePanelWidth: 224,
+  setSidebarWidth: (w) => set({ sidebarWidth: w }),
+  setPagePanelWidth: (w) => set({ pagePanelWidth: w }),
+  savePanelWidths: async () => {
+    const { sidebarWidth, pagePanelWidth } = get();
+    await setSetting("sidebarWidth", sidebarWidth);
+    await setSetting("pagePanelWidth", pagePanelWidth);
   },
 
   showSettings: false,
