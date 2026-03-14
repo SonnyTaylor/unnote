@@ -83,7 +83,7 @@ class GraphClient {
 
   async getGroupSectionPages(groupId: string, sectionId: string, top = 100) {
     return this.get<GraphCollection<Page>>(
-      `/groups/${groupId}/onenote/sections/${sectionId}/pages?$top=${top}&$select=id,title,createdDateTime,lastModifiedDateTime,level,order,contentUrl,links,parentSection,createdByAppId`
+      `/groups/${groupId}/onenote/sections/${sectionId}/pages?$top=${top}`
     );
   }
 
@@ -102,7 +102,7 @@ class GraphClient {
 
   async getSectionPages(sectionId: string, top = 100) {
     return this.get<GraphCollection<Page>>(
-      `/me/onenote/sections/${sectionId}/pages?$top=${top}&$select=id,title,createdDateTime,lastModifiedDateTime,level,order,contentUrl,links,parentSection,createdByAppId`
+      `/me/onenote/sections/${sectionId}/pages?$top=${top}`
     );
   }
 
@@ -187,8 +187,8 @@ export interface Page {
   lastModifiedDateTime: string;
   contentUrl: string;
   createdByAppId?: string;
-  level: number;
-  order: number;
+  level?: number;
+  order?: number;
   links: {
     oneNoteClientUrl: { href: string };
     oneNoteWebUrl: { href: string };

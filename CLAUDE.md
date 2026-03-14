@@ -92,6 +92,7 @@ Actions: `append`, `replace`, `delete`, `insert`, `prepend`. Target can be `"bod
 | `/me/onenote/pages?search=...` | 20108: unsupported OData params | Client-side search on cached titles |
 | `/me/onenote/pages` (global) | 20266: too many sections | Always query per-section |
 | `/education/me/classes` | 403: missing scopes | Use `/me/memberOf` instead |
+| Page `level` + `order` fields | Not returned by API | Subpage indentation not possible — fields are simply absent from the response on this tenant. `Page` interface marks them optional. |
 
 ### Image resources
 
