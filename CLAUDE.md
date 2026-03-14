@@ -16,38 +16,120 @@ No test runner is configured yet. TypeScript errors are caught by `tsc` during `
 
 ## Architecture
 
-UnNote is a **Tauri v2** desktop app with a **Vite + React 19** frontend that connects to Microsoft's Graph API to access OneNote notebooks.
+UnNote is a **Tauri v2** desktop app with a **Vite + React 19** frontend that connects to Microsoft's Graph API to access OneNote notebooks. It's an open-source cross-platform OneNote client.
+
+**Repo:** https://github.com/SonnyTaylor/unnote
 
 ### Key layers
 
-1. **Tauri shell** (`src-tauri/`) — Rust binary providing native window, system tray, and the Store plugin for persistent settings. Minimal Rust code; most logic is in the frontend.
+1. **Tauri shell** (`src-tauri/`) — Rust binary providing native window and the Store plugin for persistent settings. Minimal Rust code; almost all logic is in the frontend.
 2. **Auth** (`src/lib/msal.ts`) — MSAL OAuth2 redirect flow for Microsoft sign-in. Has a dev token bypass (`setDevToken()`) for using Graph Explorer tokens during development because the school tenant requires admin consent for custom apps.
 3. **Graph API client** (`src/lib/graph.ts`) — Typed singleton client for all OneNote endpoints. Two access patterns: `/me/onenote/...` for personal notebooks, `/groups/{id}/onenote/...` for class notebooks discovered via `/me/memberOf`.
-4. **State** — Zustand (`src/stores/app-store.ts`) for UI/nav state, TanStack Query for API data with 5-min stale time and lazy loading (`enabled` flags).
-5. **Settings** (`src/lib/settings.ts`) — Tauri Store plugin writes `settings.json` to the app config dir. Falls back to localStorage when running outside Tauri (browser dev).
+4. **State** — Zustand (`src/stores/app-store.ts`) for UI/nav state + theme + hidden classes. TanStack Query for API data with 5-min stale time and lazy loading (`enabled` flags).
+5. **Settings** (`src/lib/settings.ts`) — Tauri Store plugin writes `settings.json` to the app config dir. Falls back to localStorage when running outside Tauri (browser dev). Stores: hidden group IDs, theme ID, theme mode.
+6. **Themes** (`src/lib/themes.ts`) — 17 built-in themes. `applyTheme()` sets CSS custom properties on `document.documentElement` at runtime, overriding Tailwind v4 defaults from `@theme` in index.css.
 
 ### Component hierarchy
 
 ```
-App.tsx (MSAL init → auth gate → QueryClientProvider)
+App.tsx (MSAL init → auth gate → QueryClientProvider → system theme listener)
 ├── LoginScreen (redirect auth + dev token paste)
 └── Sidebar → SectionList → PageList (nested, lazy-loaded)
     PageViewer (OneNote HTML renderer with image auth)
-    ClassManager (modal to hide/show class notebooks)
+    ClassManager (tabbed settings modal: Classes + Appearance)
+      └── ThemePicker (theme cards + light/dark/system toggle)
 ```
 
 Selecting a parent in navigation cascades: choosing a notebook clears section/page selection.
 
+## Microsoft Graph API — Quick Reference
+
+Full endpoint research is in `API_FINDINGS.md`. Key points for development:
+
+### Discovering all notebooks
+
+```
+GET /me/onenote/notebooks                                    → personal notebooks
+GET /me/memberOf?$select=id,displayName,creationOptions,resourceProvisioningOptions,groupTypes
+  → filter: creationOptions includes "classAssignments" AND resourceProvisioningOptions includes "Team"
+  → gives class Team group IDs
+GET /groups/{groupId}/onenote/notebooks                      → class notebook for each group
+```
+
+`includesharednotebooks=true` does NOT return class notebooks. Groups API is the only way.
+
+### Navigating notebook structure
+
+```
+GET .../notebooks/{id}/sectionGroups     → for class notebooks: _Collaboration Space, _Content Library, {Student Name}
+GET .../sectionGroups/{id}/sections      → sections within a group
+GET .../notebooks/{id}/sections          → top-level sections (personal notebooks)
+GET .../sections/{id}/pages?$top=100     → pages (default 20, paginated via @odata.nextLink)
+GET .../pages/{pageId}/content           → full HTML content (MUST encode ! as %21 in pageId)
+```
+
+### Write operations (all tested and working)
+
+```
+POST .../sections/{sectionId}/pages      → create page (Content-Type: application/xhtml+xml)
+PATCH .../pages/{pageId}/content         → modify page (JSON array of {target, action, content})
+DELETE .../pages/{pageId}                → delete page (returns 204)
+```
+
+All write ops require `%21` encoding for `!` in page IDs.
+
+### PATCH format
+
+```json
+[{"target": "body", "action": "append", "content": "<p>New content</p>"}]
+```
+Actions: `append`, `replace`, `delete`, `insert`, `prepend`. Target can be `"body"` or a CSS selector like `#element-id`.
+
+### What's broken on this tenant
+
+| Endpoint | Error | Workaround |
+|----------|-------|------------|
+| `/me/onenote/pages?search=...` | 20108: unsupported OData params | Client-side search on cached titles |
+| `/me/onenote/pages` (global) | 20266: too many sections | Always query per-section |
+| `/education/me/classes` | 403: missing scopes | Use `/me/memberOf` instead |
+
+### Image resources
+
+Images in page HTML have Graph API URLs: `https://graph.microsoft.com/v1.0/groups('...')/onenote/resources/{id}/$value`. These require Bearer token auth. The `PageViewer` component fetches them with auth headers and converts to blob URLs.
+
+### Class notebook permission model (student account)
+
+| Area | List | Read | Write |
+|------|------|------|-------|
+| Own section group | Yes | Yes | Yes |
+| _Content Library | Yes | Yes | No (read-only in UI) |
+| _Collaboration Space | Yes | Yes | Yes |
+| _Teacher Only | **Hidden** | N/A | N/A |
+| Other students | **Hidden** | N/A | N/A |
+
+### ID formats
+
+- Notebooks/sections/section groups: `1-{uuid}`
+- Pages and resources: `1-{hex}!{seq}-{section-uuid}` — the `!` MUST be URL-encoded as `%21` in API paths
+
 ## Critical Quirks
 
-- **Page ID encoding**: OneNote page IDs contain `!` which must be URL-encoded as `%21` in API paths (handled by `GraphClient.encodeId()`).
-- **OneNote HTML**: Pages use `position:absolute` divs with `data-absolute-enabled="true"`. The page viewer strips absolute positioning to render in normal document flow. CSS in `index.css` reinforces this.
-- **Image auth**: OneNote images are behind Graph API auth. `PageViewer` fetches them with Bearer tokens and converts to blob URLs.
-- **Class detection**: Groups are identified as class Teams by `creationOptions.includes("classAssignments") && resourceProvisioningOptions.includes("Team")`.
-- **Search is broken**: The `/me/onenote/pages?search=` endpoint returns error 20108 on this tenant. The global `/me/onenote/pages` endpoint also fails (error 20266: too many sections). Always query pages per-section.
-- **CSP is null**: Intentionally disabled to allow OneNote HTML content with inline styles. Tighten for production.
-- **Admin consent**: The UnNote app registration (`804045d9-4f59-45f5-bfcb-efdd3672d5e4`) requires admin consent on the school tenant. Currently using Graph Explorer's client ID (`de8bc8b5-d9f9-48b1-a8ad-b748da725064`) as a workaround. Switch back once consent is granted.
+- **Page ID encoding**: `!` → `%21` in all API paths. Handled by `GraphClient.encodeId()`.
+- **OneNote HTML rendering**: Pages use `position:absolute` divs. The page viewer strips absolute positioning via regex in `normalizeOneNoteHtml()` and CSS fallbacks in `index.css`.
+- **Image auth**: Graph API image URLs need Bearer tokens. `PageViewer` fetches → blob URL conversion with cleanup on unmount.
+- **CSP is null**: Intentionally disabled to allow OneNote HTML inline styles. Tighten for production.
+- **Admin consent**: UnNote app registration (`804045d9-4f59-45f5-bfcb-efdd3672d5e4`) needs admin consent on EDUVIC tenant. Currently using Graph Explorer's client ID (`de8bc8b5-d9f9-48b1-a8ad-b748da725064`) as workaround. The `TODO` is in `src/lib/msal.ts`.
+- **Theme system**: `@theme` block in `index.css` defines CSS variable names for Tailwind utility generation. Runtime values are overridden by `applyTheme()` via `document.documentElement.style.setProperty()`. Don't put theme colors in `@theme` — that's only for defaults/Tailwind discovery.
+- **No webhooks**: OneNote has no push notifications. Sync must be polling-based.
+- **Pagination**: Default page size is 20. Use `$top` and `$skip` or follow `@odata.nextLink`.
 
-## API Reference
+## Current Status (v0.1)
 
-Full endpoint documentation with response structures, ID formats, and access patterns is in `API_FINDINGS.md`.
+**Working:** Auth (dev token), notebook/section/page navigation, read-only page viewer with image auth, class visibility management, 17 themes with light/dark/system, persistent settings via Tauri Store.
+
+**Next priorities:**
+1. 3-pane layout (notebooks | sections+pages | content) to match OneNote UX
+2. Page content rendering polish (tables, checkboxes, highlighted blocks)
+3. Client-side search across cached page titles
+4. Keyboard shortcuts + command palette
+5. Editing (TipTap + PATCH API) — v0.2 milestone
