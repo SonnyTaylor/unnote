@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { Notebook, Section, SectionGroup, Page } from "@/lib/graph";
 import { getSetting, setSetting } from "@/lib/settings";
+import { applyTheme } from "@/lib/themes";
 
 export interface ClassNotebookInfo {
   groupId: string;
@@ -33,6 +34,12 @@ interface AppState {
   hiddenGroupIds: Set<string>;
   toggleHiddenGroup: (groupId: string) => void;
   loadSettings: () => Promise<void>;
+
+  // Theme
+  currentTheme: string;
+  themeMode: "light" | "dark" | "system";
+  setTheme: (themeId: string) => void;
+  setThemeMode: (mode: "light" | "dark" | "system") => void;
 
   // Settings panel
   showSettings: boolean;
@@ -85,7 +92,25 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   loadSettings: async () => {
     const hiddenIds = await getSetting("hiddenGroupIds");
-    set({ hiddenGroupIds: new Set(hiddenIds) });
+    const theme = await getSetting("theme");
+    const themeMode = await getSetting("themeMode");
+    set({ hiddenGroupIds: new Set(hiddenIds), currentTheme: theme, themeMode });
+    applyTheme(theme, themeMode);
+  },
+
+  currentTheme: "unnote",
+  themeMode: "system",
+  setTheme: async (themeId) => {
+    const mode = get().themeMode;
+    set({ currentTheme: themeId });
+    applyTheme(themeId, mode);
+    await setSetting("theme", themeId);
+  },
+  setThemeMode: async (mode) => {
+    const themeId = get().currentTheme;
+    set({ themeMode: mode });
+    applyTheme(themeId, mode);
+    await setSetting("themeMode", mode);
   },
 
   showSettings: false,

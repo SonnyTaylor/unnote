@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { msalInstance } from "@/lib/msal";
 import { useAppStore } from "@/stores/app-store";
+import { applyTheme } from "@/lib/themes";
 import { Sidebar } from "@/components/sidebar";
 import { PageViewer } from "@/components/page-viewer";
 import { LoginScreen } from "@/components/login-screen";
@@ -19,7 +20,16 @@ const queryClient = new QueryClient({
 
 export default function App() {
   const [initializing, setInitializing] = useState(true);
-  const { isAuthenticated, setAuth, loadSettings } = useAppStore();
+  const { isAuthenticated, setAuth, loadSettings, themeMode, currentTheme } = useAppStore();
+
+  // Re-apply theme when system preference changes (for "system" mode)
+  useEffect(() => {
+    if (themeMode !== "system") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => applyTheme(currentTheme, "system");
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, [themeMode, currentTheme]);
 
   useEffect(() => {
     msalInstance.initialize().then(async () => {

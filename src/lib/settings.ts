@@ -2,12 +2,14 @@ import { load } from "@tauri-apps/plugin-store";
 
 export interface AppSettings {
   hiddenGroupIds: string[];
-  theme: "light" | "dark" | "system";
+  theme: string;
+  themeMode: "light" | "dark" | "system";
 }
 
 const DEFAULTS: AppSettings = {
   hiddenGroupIds: [],
-  theme: "system",
+  theme: "unnote",
+  themeMode: "system",
 };
 
 let store: Awaited<ReturnType<typeof load>> | null = null;
