@@ -187,6 +187,8 @@ export interface Page {
   lastModifiedDateTime: string;
   contentUrl: string;
   createdByAppId?: string;
+  level: number;
+  order: number;
   links: {
     oneNoteClientUrl: { href: string };
     oneNoteWebUrl: { href: string };
