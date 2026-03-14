@@ -76,14 +76,58 @@
   }
 }
 
+/* Disable text selection drag in sidebar */
+aside {
+  user-select: none;
+}
+
+/* Enable text selection in content */
+.onenote-content {
+  user-select: text;
+}
+
+/* Smooth scrolling */
+.overflow-y-auto {
+  scroll-behavior: smooth;
+}
+
 /* OneNote content rendering */
 .onenote-content {
   line-height: 1.6;
 }
 
+/* Better OneNote content rendering */
+.onenote-content > div {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  margin-bottom: 0.5rem;
+}
+
+.onenote-content p {
+  margin: 0.25rem 0;
+}
+
+.onenote-content h1, .onenote-content h2, .onenote-content h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.onenote-content li {
+  margin: 0.125rem 0;
+}
+
+/* Hide empty paragraphs */
+.onenote-content p:empty {
+  display: none;
+}
+
 .onenote-content img {
   max-width: 100%;
   height: auto;
+  border-radius: 4px;
+  margin: 0.5rem 0;
 }
 
 .onenote-content table {
@@ -105,4 +149,10 @@
 .onenote-content ul,
 .onenote-content ol {
   padding-left: 1.5rem;
+}
+
+/* Style highlighted text */
+.onenote-content span[style*="background-color"] {
+  padding: 0.125rem 0.25rem;
+  border-radius: 2px;
 }

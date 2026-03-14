@@ -12,9 +12,12 @@ import {
   PanelLeft,
   LogOut,
   AlertCircle,
+  NotebookPen,
 } from "lucide-react";
 import { useState } from "react";
 import { clearDevToken } from "@/lib/msal";
+
+const CURRENT_YEAR = "2026";
 
 interface ClassNotebook {
   groupId: string;
@@ -25,6 +28,7 @@ interface ClassNotebook {
 export function Sidebar() {
   const { sidebarOpen, toggleSidebar, selectedNotebook, setSelectedNotebook, setAuth } =
     useAppStore();
+  const [showOlderClasses, setShowOlderClasses] = useState(false);
 
   const {
     data: personalNotebooks,
@@ -70,6 +74,14 @@ export function Sidebar() {
     },
   });
 
+  // Split class notebooks into current year and older
+  const currentClassNotebooks = (classNotebooks ?? []).filter((cn) =>
+    cn.groupName?.includes(CURRENT_YEAR)
+  );
+  const olderClassNotebooks = (classNotebooks ?? []).filter(
+    (cn) => !cn.groupName?.includes(CURRENT_YEAR)
+  );
+
   const handleLogout = () => {
     clearDevToken();
     setAuth(false);
@@ -90,7 +102,10 @@ export function Sidebar() {
     <aside className="flex h-full w-72 flex-col border-r border-sidebar-border bg-sidebar-background">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-sidebar-border px-4 py-3">
-        <h2 className="text-lg font-semibold text-sidebar-foreground">UnNote</h2>
+        <div className="flex items-center gap-2">
+          <img src="/unnote.svg" alt="UnNote" className="h-6 w-6" />
+          <h2 className="text-lg font-semibold text-sidebar-foreground">UnNote</h2>
+        </div>
         <button
           onClick={toggleSidebar}
           className="rounded-md p-1.5 hover:bg-sidebar-accent"
@@ -122,16 +137,50 @@ export function Sidebar() {
         ) : classError ? (
           <ErrorIndicator message="Failed to load class notebooks" />
         ) : (
-          <NotebookGroup
-            label="Classes"
-            icon={<GraduationCap className="h-4 w-4" />}
-            notebooks={(classNotebooks ?? []).map((cn) => ({
-              ...cn.notebook,
-              groupId: cn.groupId,
-            }))}
-            selectedId={selectedNotebook?.id ?? null}
-            onSelect={(nb) => setSelectedNotebook(nb)}
-          />
+          <>
+            <NotebookGroup
+              label="Classes"
+              icon={<GraduationCap className="h-4 w-4" />}
+              notebooks={currentClassNotebooks.map((cn) => ({
+                ...cn.notebook,
+                groupId: cn.groupId,
+              }))}
+              selectedId={selectedNotebook?.id ?? null}
+              onSelect={(nb) => setSelectedNotebook(nb)}
+            />
+            {olderClassNotebooks.length > 0 && (
+              <>
+                {showOlderClasses ? (
+                  <>
+                    <NotebookGroup
+                      label="Older Classes"
+                      icon={<GraduationCap className="h-4 w-4" />}
+                      notebooks={olderClassNotebooks.map((cn) => ({
+                        ...cn.notebook,
+                        groupId: cn.groupId,
+                      }))}
+                      selectedId={selectedNotebook?.id ?? null}
+                      onSelect={(nb) => setSelectedNotebook(nb)}
+                      defaultExpanded={false}
+                    />
+                    <button
+                      onClick={() => setShowOlderClasses(false)}
+                      className="ml-2 mt-1 text-xs text-muted-foreground hover:text-sidebar-foreground transition-colors"
+                    >
+                      Hide older classes
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setShowOlderClasses(true)}
+                    className="ml-2 mt-1 text-xs text-muted-foreground hover:text-sidebar-foreground transition-colors"
+                  >
+                    Show older classes ({olderClassNotebooks.length})
+                  </button>
+                )}
+              </>
+            )}
+          </>
         )}
 
         {/* Section list for selected notebook */}
@@ -176,14 +225,16 @@ function NotebookGroup({
   notebooks,
   selectedId,
   onSelect,
+  defaultExpanded = true,
 }: {
   label: string;
   icon: React.ReactNode;
   notebooks: (Notebook & { groupId?: string })[];
   selectedId: string | null;
   onSelect: (nb: Notebook & { groupId?: string }) => void;
+  defaultExpanded?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(defaultExpanded);
 
   if (notebooks.length === 0) return null;
 
@@ -200,6 +251,9 @@ function NotebookGroup({
         )}
         {icon}
         {label}
+        <span className="ml-auto rounded-full bg-sidebar-accent px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+          {notebooks.length}
+        </span>
       </button>
       {expanded && (
         <div className="ml-2 mt-1 space-y-0.5">
@@ -207,12 +261,13 @@ function NotebookGroup({
             <button
               key={nb.id}
               onClick={() => onSelect(nb)}
-              className={`flex w-full items-center rounded-md px-3 py-1.5 text-sm transition-colors ${
+              className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${
                 selectedId === nb.id
                   ? "bg-sidebar-primary text-sidebar-primary-foreground"
                   : "text-sidebar-foreground hover:bg-sidebar-accent"
               }`}
             >
+              <NotebookPen className="h-3.5 w-3.5 shrink-0 opacity-60" />
               <span className="truncate">{nb.displayName}</span>
             </button>
           ))}

@@ -30,10 +30,11 @@ export function LoginScreen() {
 
   return (
     <div className="flex h-screen items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-6 max-w-sm text-center">
-        <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-8 max-w-sm text-center">
+        <div className="flex flex-col items-center gap-3">
+          <img src="/unnote.svg" alt="UnNote" className="h-20 w-20" />
           <h1 className="text-4xl font-bold text-foreground">UnNote</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-lg">
             A better OneNote experience, everywhere.
           </p>
         </div>

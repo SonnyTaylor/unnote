@@ -1,10 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 import { graphClient } from "@/lib/graph";
 import { useAppStore } from "@/stores/app-store";
-import { Loader2, BookOpen } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import DOMPurify from "dompurify";
 import { useEffect, useRef } from "react";
 import { getAccessToken } from "@/lib/msal";
+
+// Convert OneNote absolute positioning to normal document flow
+function normalizeOneNoteHtml(html: string): string {
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  let content = bodyMatch?.[1] ?? html;
+
+  // Remove absolute positioning from inline styles
+  content = content.replace(/position:\s*absolute\s*;?/gi, "");
+  content = content.replace(/left:\s*[\d.]+px\s*;?/gi, "");
+  content = content.replace(/top:\s*[\d.]+px\s*;?/gi, "");
+
+  // Remove data-absolute-enabled
+  content = content.replace(/data-absolute-enabled="[^"]*"/gi, "");
+
+  return content;
+}
 
 export function PageViewer() {
   const { selectedPage } = useAppStore();
@@ -62,10 +78,10 @@ export function PageViewer() {
 
   if (!selectedPage) {
     return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <BookOpen className="h-12 w-12" />
-          <p>Select a page to view</p>
+      <div className="flex flex-1 items-center justify-center bg-muted/30">
+        <div className="flex flex-col items-center gap-4 text-muted-foreground">
+          <img src="/unnote.svg" alt="UnNote" className="h-16 w-16 opacity-40" />
+          <p className="text-lg">Select a page to view</p>
         </div>
       </div>
     );
@@ -87,15 +103,12 @@ export function PageViewer() {
     );
   }
 
-  // Extract body content from the full HTML document
-  const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-  const bodyContent = bodyMatch?.[1] ?? html;
+  // Normalize OneNote HTML (strip absolute positioning) then sanitize
+  const normalizedContent = normalizeOneNoteHtml(html);
 
-  // Sanitize HTML
-  const sanitized = DOMPurify.sanitize(bodyContent, {
+  const sanitized = DOMPurify.sanitize(normalizedContent, {
     ADD_TAGS: ["meta"],
     ADD_ATTR: [
-      "data-absolute-enabled",
       "data-id",
       "data-src-type",
       "data-fullres-src",
@@ -105,7 +118,7 @@ export function PageViewer() {
   });
 
   return (
-    <main className="flex-1 overflow-auto">
+    <main className="flex-1 overflow-auto bg-muted/20">
       {/* Page title bar */}
       <div className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur px-6 py-3">
         <h1 className="text-lg font-semibold">{selectedPage.title || "Untitled"}</h1>
@@ -118,7 +131,8 @@ export function PageViewer() {
       {/* Page content */}
       <div
         ref={contentRef}
-        className="onenote-content relative mx-auto max-w-4xl px-6 py-6"
+        className="onenote-content relative mx-auto max-w-4xl bg-background px-8 py-8 shadow-sm min-h-full"
+        style={{ fontFamily: 'Calibri, "Segoe UI", system-ui, sans-serif', fontSize: "14.5px" }}
         dangerouslySetInnerHTML={{ __html: sanitized }}
       />
     </main>
