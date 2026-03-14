@@ -20,7 +20,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: https://graph.microsoft.com; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.sharepoint.com"
+      "csp": null
     }
   },
   "bundle": {

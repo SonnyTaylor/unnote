@@ -11,9 +11,10 @@ import {
   PanelLeftClose,
   PanelLeft,
   LogOut,
+  AlertCircle,
 } from "lucide-react";
 import { useState } from "react";
-import { msalInstance } from "@/lib/msal";
+import { clearDevToken } from "@/lib/msal";
 
 interface ClassNotebook {
   groupId: string;
@@ -25,7 +26,11 @@ export function Sidebar() {
   const { sidebarOpen, toggleSidebar, selectedNotebook, setSelectedNotebook, setAuth } =
     useAppStore();
 
-  const { data: personalNotebooks, isLoading: loadingPersonal } = useQuery({
+  const {
+    data: personalNotebooks,
+    isLoading: loadingPersonal,
+    error: personalError,
+  } = useQuery({
     queryKey: ["personal-notebooks"],
     queryFn: async () => {
       const res = await graphClient.getPersonalNotebooks();
@@ -33,7 +38,11 @@ export function Sidebar() {
     },
   });
 
-  const { data: classNotebooks, isLoading: loadingClasses } = useQuery({
+  const {
+    data: classNotebooks,
+    isLoading: loadingClasses,
+    error: classError,
+  } = useQuery({
     queryKey: ["class-notebooks"],
     queryFn: async () => {
       const groups = await graphClient.getUserGroups();
@@ -43,27 +52,26 @@ export function Sidebar() {
           g.resourceProvisioningOptions?.includes("Team")
       );
 
-      const results: ClassNotebook[] = [];
-      for (const group of classGroups) {
-        try {
+      // Fetch notebooks in parallel instead of sequentially
+      const results = await Promise.allSettled(
+        classGroups.map(async (group) => {
           const notebooks = await graphClient.getGroupNotebooks(group.id);
-          for (const nb of notebooks.value) {
-            results.push({
-              groupId: group.id,
-              groupName: group.displayName,
-              notebook: nb,
-            });
-          }
-        } catch {
-          // Skip groups where notebook access fails
-        }
-      }
-      return results;
+          return notebooks.value.map((nb) => ({
+            groupId: group.id,
+            groupName: group.displayName,
+            notebook: nb,
+          }));
+        })
+      );
+
+      return results
+        .filter((r): r is PromiseFulfilledResult<ClassNotebook[]> => r.status === "fulfilled")
+        .flatMap((r) => r.value);
     },
   });
 
   const handleLogout = () => {
-    msalInstance.logoutPopup();
+    clearDevToken();
     setAuth(false);
   };
 
@@ -77,8 +85,6 @@ export function Sidebar() {
       </button>
     );
   }
-
-  const isLoading = loadingPersonal || loadingClasses;
 
   return (
     <aside className="flex h-full w-72 flex-col border-r border-sidebar-border bg-sidebar-background">
@@ -95,33 +101,37 @@ export function Sidebar() {
 
       {/* Notebook List */}
       <div className="flex-1 overflow-y-auto px-2 py-2">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
+        {/* Personal Notebooks */}
+        {loadingPersonal ? (
+          <LoadingIndicator label="Loading notebooks..." />
+        ) : personalError ? (
+          <ErrorIndicator message="Failed to load personal notebooks" />
         ) : (
-          <>
-            {/* Personal Notebooks */}
-            <NotebookGroup
-              label="Personal"
-              icon={<BookOpen className="h-4 w-4" />}
-              notebooks={personalNotebooks ?? []}
-              selectedId={selectedNotebook?.id ?? null}
-              onSelect={(nb) => setSelectedNotebook(nb)}
-            />
+          <NotebookGroup
+            label="Personal"
+            icon={<BookOpen className="h-4 w-4" />}
+            notebooks={personalNotebooks ?? []}
+            selectedId={selectedNotebook?.id ?? null}
+            onSelect={(nb) => setSelectedNotebook(nb)}
+          />
+        )}
 
-            {/* Class Notebooks */}
-            <NotebookGroup
-              label="Classes"
-              icon={<GraduationCap className="h-4 w-4" />}
-              notebooks={(classNotebooks ?? []).map((cn) => ({
-                ...cn.notebook,
-                groupId: cn.groupId,
-              }))}
-              selectedId={selectedNotebook?.id ?? null}
-              onSelect={(nb) => setSelectedNotebook(nb)}
-            />
-          </>
+        {/* Class Notebooks — loads independently */}
+        {loadingClasses ? (
+          <LoadingIndicator label="Loading classes..." />
+        ) : classError ? (
+          <ErrorIndicator message="Failed to load class notebooks" />
+        ) : (
+          <NotebookGroup
+            label="Classes"
+            icon={<GraduationCap className="h-4 w-4" />}
+            notebooks={(classNotebooks ?? []).map((cn) => ({
+              ...cn.notebook,
+              groupId: cn.groupId,
+            }))}
+            selectedId={selectedNotebook?.id ?? null}
+            onSelect={(nb) => setSelectedNotebook(nb)}
+          />
         )}
 
         {/* Section list for selected notebook */}
@@ -139,6 +149,24 @@ export function Sidebar() {
         </button>
       </div>
     </aside>
+  );
+}
+
+function LoadingIndicator({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2 px-2 py-3 text-sm text-muted-foreground">
+      <Loader2 className="h-4 w-4 animate-spin" />
+      {label}
+    </div>
+  );
+}
+
+function ErrorIndicator({ message }: { message: string }) {
+  return (
+    <div className="flex items-center gap-2 px-2 py-3 text-sm text-destructive">
+      <AlertCircle className="h-4 w-4" />
+      {message}
+    </div>
   );
 }
 

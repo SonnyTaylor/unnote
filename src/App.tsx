@@ -21,7 +21,18 @@ export default function App() {
   const { isAuthenticated, setAuth } = useAppStore();
 
   useEffect(() => {
-    msalInstance.initialize().then(() => {
+    msalInstance.initialize().then(async () => {
+      // Handle redirect response after login
+      try {
+        const response = await msalInstance.handleRedirectPromise();
+        if (response?.account) {
+          setAuth(true, response.account.name ?? response.account.username);
+        }
+      } catch {
+        // Redirect handling failed
+      }
+
+      // Check if already logged in
       const accounts = msalInstance.getAllAccounts();
       if (accounts.length > 0) {
         setAuth(true, accounts[0].name ?? accounts[0].username);
