@@ -25,7 +25,7 @@ export function PagePanel({ width }: { width: number }) {
     enabled: !!selectedSection,
   });
 
-  // Sort by order (API returns them ordered, but be explicit)
+  // Sort by order if available (level/order are not returned by all tenants)
   const sortedPages = pages ? [...pages].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)) : [];
 
 
