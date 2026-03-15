@@ -6,6 +6,7 @@ export interface AppSettings {
   themeMode: "light" | "dark" | "system";
   sidebarWidth: number;
   pagePanelWidth: number;
+  animationsEnabled: boolean;
 }
 
 const DEFAULTS: AppSettings = {
@@ -14,6 +15,7 @@ const DEFAULTS: AppSettings = {
   themeMode: "system",
   sidebarWidth: 208,
   pagePanelWidth: 224,
+  animationsEnabled: true,
 };
 
 let store: Awaited<ReturnType<typeof load>> | null = null;

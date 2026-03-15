@@ -29,7 +29,7 @@ function formatPageDate(dateStr: string): string {
 }
 
 export function PageViewer() {
-  const { selectedPage } = useAppStore();
+  const { selectedPage, animationsEnabled } = useAppStore();
   const contentRef = useRef<HTMLDivElement>(null);
 
   const groupId = (selectedPage as any)?.groupId as string | undefined;
@@ -114,7 +114,12 @@ export function PageViewer() {
 
   return (
     <main className="flex flex-1 flex-col overflow-hidden bg-background">
-      <div className="flex-1 overflow-y-auto">
+      <div
+        className="flex-1 overflow-y-auto"
+        style={{
+          animation: animationsEnabled ? "fadeIn 250ms ease-out" : "none",
+        }}
+      >
         {/* Page title area */}
         <div className="mx-auto max-w-4xl px-12 pb-0 pt-10">
           <h1 className="text-[26px] font-semibold leading-tight text-foreground tracking-tight">

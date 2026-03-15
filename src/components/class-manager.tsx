@@ -13,7 +13,7 @@ interface ClassGroup {
 type Tab = "classes" | "appearance";
 
 export function ClassManager() {
-  const { showSettings, setShowSettings, hiddenGroupIds, toggleHiddenGroup } =
+  const { showSettings, setShowSettings, hiddenGroupIds, toggleHiddenGroup, animationsEnabled } =
     useAppStore();
   const [activeTab, setActiveTab] = useState<Tab>("classes");
 
@@ -53,8 +53,18 @@ export function ClassManager() {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="surface-glass surface-sheen mx-4 w-full max-w-md rounded-2xl border border-border/50 shadow-2xl shadow-black/20">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      style={{
+        animation: animationsEnabled ? "fadeIn 150ms ease-out" : "none",
+      }}
+    >
+      <div
+        className="surface-glass surface-sheen mx-4 w-full max-w-md rounded-2xl border border-border/50 shadow-2xl shadow-black/20"
+        style={{
+          animation: animationsEnabled ? "scaleIn 200ms ease-out" : "none",
+        }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border/40 px-6 py-4">
           <h2 className="text-[15px] font-semibold tracking-tight">Settings</h2>

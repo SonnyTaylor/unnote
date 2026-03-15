@@ -36,7 +36,7 @@ function ThemePreview({ theme, isDark }: { theme: Theme; isDark: boolean }) {
 }
 
 export function ThemePicker() {
-  const { currentTheme, themeMode, setTheme, setThemeMode } = useAppStore();
+  const { currentTheme, themeMode, setTheme, setThemeMode, animationsEnabled, setAnimationsEnabled } = useAppStore();
   const previewDark = themeMode === "dark" || (themeMode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   return (
@@ -59,6 +59,28 @@ export function ThemePicker() {
               {label}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Animations toggle */}
+      <div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[13px] font-medium text-foreground">Animations</p>
+            <p className="text-[11px] text-muted-foreground/70 mt-0.5">Smooth transitions and motion effects</p>
+          </div>
+          <button
+            onClick={() => setAnimationsEnabled(!animationsEnabled)}
+            className={`relative h-6 w-11 rounded-full transition-colors ${
+              animationsEnabled ? "bg-primary" : "bg-border"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                animationsEnabled ? "translate-x-5" : "translate-x-0"
+              }`}
+            />
+          </button>
         </div>
       </div>
 

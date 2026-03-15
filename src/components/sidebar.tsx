@@ -4,7 +4,6 @@ import { useAppStore } from "@/stores/app-store";
 import { SectionList } from "./section-list";
 import {
   ChevronDown,
-  ChevronRight,
   Loader2,
   PanelLeftClose,
   PanelLeft,
@@ -14,6 +13,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { clearDevToken } from "@/lib/msal";
+import { useRef, useEffect } from "react";
 
 interface ClassNotebook {
   groupId: string;
@@ -40,6 +40,21 @@ function getNotebookColor(index: number) {
   return NOTEBOOK_COLORS[index % NOTEBOOK_COLORS.length];
 }
 
+/** Animated expand/collapse wrapper using grid row trick */
+function AnimatedExpand({ open, children, animate }: { open: boolean; children: React.ReactNode; animate: boolean }) {
+  return (
+    <div
+      className="grid overflow-hidden"
+      style={{
+        gridTemplateRows: open ? "1fr" : "0fr",
+        transition: animate ? "grid-template-rows 200ms ease-out" : "none",
+      }}
+    >
+      <div className="min-h-0">{children}</div>
+    </div>
+  );
+}
+
 export function Sidebar({ width }: { width: number }) {
   const {
     sidebarOpen,
@@ -49,6 +64,7 @@ export function Sidebar({ width }: { width: number }) {
     setAuth,
     hiddenGroupIds,
     setShowSettings,
+    animationsEnabled,
   } = useAppStore();
 
   const {
@@ -170,6 +186,7 @@ export function Sidebar({ width }: { width: number }) {
                 color={getNotebookColor(i)}
                 isSelected={selectedNotebook?.id === nb.id}
                 onSelect={() => setSelectedNotebook(nb)}
+                animate={animationsEnabled}
               />
             ))}
           </>
@@ -190,6 +207,7 @@ export function Sidebar({ width }: { width: number }) {
                 color={getNotebookColor(allPersonal.length + i)}
                 isSelected={selectedNotebook?.id === nb.id}
                 onSelect={() => setSelectedNotebook(nb)}
+                animate={animationsEnabled}
               />
             ))}
             {hiddenCount > 0 && (
@@ -243,12 +261,20 @@ function NotebookItem({
   color,
   isSelected,
   onSelect,
+  animate,
 }: {
   notebook: Notebook & { groupId?: string };
   color: string;
   isSelected: boolean;
   onSelect: () => void;
+  animate: boolean;
 }) {
+  // Track whether the section list has been rendered (to avoid animating initial mount)
+  const hasRendered = useRef(false);
+  useEffect(() => {
+    hasRendered.current = true;
+  }, []);
+
   return (
     <div>
       <button
@@ -270,19 +296,21 @@ function NotebookItem({
           <BookOpen className="h-3 w-3 text-white" />
         </div>
         <span className="flex-1 truncate text-left">{notebook.displayName}</span>
-        {isSelected ? (
-          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-sidebar-foreground/40" />
-        ) : (
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-sidebar-foreground/30" />
-        )}
+        <ChevronDown
+          className="h-3.5 w-3.5 shrink-0 text-sidebar-foreground/40"
+          style={{
+            transform: isSelected ? "rotate(0deg)" : "rotate(-90deg)",
+            transition: animate ? "transform 200ms ease-out" : "none",
+          }}
+        />
       </button>
 
-      {/* Section tree expands inline under the notebook */}
-      {isSelected && (
+      {/* Section tree expands with animation */}
+      <AnimatedExpand open={isSelected} animate={animate && hasRendered.current}>
         <div className="mb-1">
           <SectionList notebookColor={color} />
         </div>
-      )}
+      </AnimatedExpand>
     </div>
   );
 }

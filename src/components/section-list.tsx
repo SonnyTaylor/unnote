@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { graphClient, type Section, type SectionGroup } from "@/lib/graph";
 import { useAppStore } from "@/stores/app-store";
-import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 const SECTION_COLORS = [
@@ -21,8 +21,23 @@ function getSectionColor(index: number) {
   return SECTION_COLORS[index % SECTION_COLORS.length];
 }
 
+/** Animated expand/collapse wrapper using grid row trick */
+function AnimatedExpand({ open, children, animate }: { open: boolean; children: React.ReactNode; animate: boolean }) {
+  return (
+    <div
+      className="grid overflow-hidden"
+      style={{
+        gridTemplateRows: open ? "1fr" : "0fr",
+        transition: animate ? "grid-template-rows 200ms ease-out" : "none",
+      }}
+    >
+      <div className="min-h-0">{children}</div>
+    </div>
+  );
+}
+
 export function SectionList({ notebookColor: _notebookColor }: { notebookColor?: string }) {
-  const { selectedNotebook, selectedSection, setSelectedSection, setSelectedSectionGroup } =
+  const { selectedNotebook, selectedSection, setSelectedSection, setSelectedSectionGroup, animationsEnabled } =
     useAppStore();
 
   const groupId = (selectedNotebook as any)?.groupId as string | undefined;
@@ -63,7 +78,12 @@ export function SectionList({ notebookColor: _notebookColor }: { notebookColor?:
   }
 
   return (
-    <div className="ml-4 border-l-2 border-sidebar-border/60 pl-0 pt-0.5">
+    <div
+      className="ml-4 border-l-2 border-sidebar-border/60 pl-0 pt-0.5"
+      style={{
+        animation: animationsEnabled ? "fadeSlideIn 200ms ease-out" : "none",
+      }}
+    >
       {sectionGroups?.map((sg, i) => (
         <SectionGroupItem
           key={sg.id}
@@ -71,6 +91,7 @@ export function SectionList({ notebookColor: _notebookColor }: { notebookColor?:
           groupId={groupId}
           selectedSectionId={selectedSection?.id ?? null}
           colorIndex={i}
+          animate={animationsEnabled}
           onSelectSection={(section) => {
             setSelectedSectionGroup(sg);
             setSelectedSection(groupId ? { ...section, groupId } : section);
@@ -128,12 +149,14 @@ function SectionGroupItem({
   groupId,
   selectedSectionId,
   colorIndex,
+  animate,
   onSelectSection,
 }: {
   sectionGroup: SectionGroup;
   groupId?: string;
   selectedSectionId: string | null;
   colorIndex: number;
+  animate: boolean;
   onSelectSection: (section: Section) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -159,15 +182,17 @@ function SectionGroupItem({
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center gap-1.5 rounded-md px-2 py-[5px] text-[12px] text-sidebar-foreground/75 hover:bg-sidebar-accent/60"
       >
-        {expanded ? (
-          <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
-        )}
+        <ChevronDown
+          className="h-3 w-3 shrink-0 text-muted-foreground"
+          style={{
+            transform: expanded ? "rotate(0deg)" : "rotate(-90deg)",
+            transition: animate ? "transform 200ms ease-out" : "none",
+          }}
+        />
         <span className="truncate font-medium">{displayName}</span>
       </button>
 
-      {expanded && (
+      <AnimatedExpand open={expanded} animate={animate}>
         <div className="ml-3 border-l-2 border-sidebar-border/40 pl-0">
           {isLoading ? (
             <div className="flex items-center py-2 pl-3">
@@ -185,7 +210,7 @@ function SectionGroupItem({
             ))
           )}
         </div>
-      )}
+      </AnimatedExpand>
     </div>
   );
 }

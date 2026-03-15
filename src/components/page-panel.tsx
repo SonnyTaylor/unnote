@@ -23,7 +23,7 @@ function formatShortDate(dateStr: string): string {
 }
 
 export function PagePanel({ width }: { width: number }) {
-  const { selectedSection, selectedPage, setSelectedPage } = useAppStore();
+  const { selectedSection, selectedPage, setSelectedPage, animationsEnabled } = useAppStore();
 
   const groupId = (selectedSection as any)?.groupId as string | undefined;
 
@@ -81,7 +81,7 @@ export function PagePanel({ width }: { width: number }) {
           </div>
         ) : (
           <div className="py-1 px-1.5">
-            {sortedPages.map((page) => {
+            {sortedPages.map((page, index) => {
               const isSelected = selectedPage?.id === page.id;
               const indent = (page.level ?? 0) * INDENT_PX;
               const isSubpage = (page.level ?? 0) > 0;
@@ -95,7 +95,10 @@ export function PagePanel({ width }: { width: number }) {
                       ? "bg-primary/12 border-l-[3px] border-l-primary shadow-sm"
                       : "border-l-[3px] border-l-transparent hover:bg-white/40 dark:hover:bg-white/6"
                   }`}
-                  style={{ paddingLeft: `${12 + indent}px` }}
+                  style={{
+                    paddingLeft: `${12 + indent}px`,
+                    animation: animationsEnabled ? `fadeSlideIn 200ms ease-out ${Math.min(index * 30, 300)}ms both` : "none",
+                  }}
                 >
                   <div className="flex items-start gap-1.5">
                     {isSubpage && (

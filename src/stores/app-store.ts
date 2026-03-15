@@ -48,6 +48,10 @@ interface AppState {
   setPagePanelWidth: (w: number) => void;
   savePanelWidths: () => Promise<void>;
 
+  // Animations
+  animationsEnabled: boolean;
+  setAnimationsEnabled: (enabled: boolean) => void;
+
   // Settings panel
   showSettings: boolean;
   setShowSettings: (show: boolean) => void;
@@ -103,7 +107,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     const themeMode = await getSetting("themeMode");
     const sidebarWidth = await getSetting("sidebarWidth");
     const pagePanelWidth = await getSetting("pagePanelWidth");
-    set({ hiddenGroupIds: new Set(hiddenIds), currentTheme: theme, themeMode, sidebarWidth, pagePanelWidth });
+    const animationsEnabled = await getSetting("animationsEnabled");
+    set({ hiddenGroupIds: new Set(hiddenIds), currentTheme: theme, themeMode, sidebarWidth, pagePanelWidth, animationsEnabled });
     applyTheme(theme, themeMode);
   },
 
@@ -130,6 +135,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { sidebarWidth, pagePanelWidth } = get();
     await setSetting("sidebarWidth", sidebarWidth);
     await setSetting("pagePanelWidth", pagePanelWidth);
+  },
+
+  animationsEnabled: true,
+  setAnimationsEnabled: async (enabled) => {
+    set({ animationsEnabled: enabled });
+    await setSetting("animationsEnabled", enabled);
   },
 
   showSettings: false,
