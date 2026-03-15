@@ -154,15 +154,14 @@ function enhanceRenderedContent(container: HTMLElement) {
           const response = await fetch(dataUrl, {
             headers: { Authorization: `Bearer ${token}` },
           });
-          if (response.ok) {
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = filename;
-            a.click();
-            URL.revokeObjectURL(url);
-          }
+          if (!response.ok) return;
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(url);
         } catch {
           // silently ignore
         }

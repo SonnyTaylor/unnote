@@ -115,8 +115,8 @@ export function Sidebar({ width }: { width: number }) {
   );
   const hiddenCount = (classNotebooks ?? []).length - visibleClassNotebooks.length;
 
-  const handleLogout = () => {
-    clearDevToken();
+  const handleLogout = async () => {
+    await clearDevToken();
     setAuth(false);
   };
 

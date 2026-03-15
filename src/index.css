@@ -78,6 +78,14 @@
   }
 }
 
+/* Custom titlebar */
+.titlebar {
+  -webkit-app-region: drag;
+}
+.titlebar button {
+  -webkit-app-region: no-drag;
+}
+
 /* Disable text selection drag in sidebar */
 aside {
   user-select: none;

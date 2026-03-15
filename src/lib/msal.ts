@@ -1,4 +1,5 @@
 import { PublicClientApplication, type Configuration, InteractionRequiredAuthError } from "@azure/msal-browser";
+import { getSetting, setSetting } from "./settings";
 
 const msalConfig: Configuration = {
   auth: {
@@ -23,30 +24,39 @@ export const loginRequest = {
 };
 
 // Dev mode: allow manually setting a token from Graph Explorer
+// Stored in Tauri Store (falls back to localStorage) instead of plain localStorage
 let devToken: string | null = null;
 
-export function setDevToken(token: string) {
+export async function setDevToken(token: string) {
   devToken = token;
-  localStorage.setItem("unnote_dev_token", token);
+  await setSetting("devToken", token);
 }
 
-export function clearDevToken() {
+export async function clearDevToken() {
   devToken = null;
-  localStorage.removeItem("unnote_dev_token");
+  await setSetting("devToken", "");
 }
 
-export function hasDevToken(): boolean {
-  return !!(devToken || localStorage.getItem("unnote_dev_token"));
+export async function loadDevToken(): Promise<boolean> {
+  const stored = await getSetting("devToken");
+  if (stored) {
+    devToken = stored;
+    return true;
+  }
+  // Migration: check old localStorage key
+  const legacy = localStorage.getItem("unnote_dev_token");
+  if (legacy) {
+    devToken = legacy;
+    await setSetting("devToken", legacy);
+    localStorage.removeItem("unnote_dev_token");
+    return true;
+  }
+  return false;
 }
 
 export async function getAccessToken(): Promise<string | null> {
-  // Check dev token first
+  // Check in-memory dev token first
   if (devToken) return devToken;
-  const stored = localStorage.getItem("unnote_dev_token");
-  if (stored) {
-    devToken = stored;
-    return stored;
-  }
 
   // MSAL flow
   const accounts = msalInstance.getAllAccounts();

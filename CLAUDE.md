@@ -22,22 +22,26 @@ UnNote is a **Tauri v2** desktop app with a **Vite + React 19** frontend that co
 
 ### Key layers
 
-1. **Tauri shell** (`src-tauri/`) — Rust binary providing native window and the Store plugin for persistent settings. Minimal Rust code; almost all logic is in the frontend.
+1. **Tauri shell** (`src-tauri/`) — Rust binary providing native window, custom titlebar (decorations disabled), and plugins: Store (settings + query cache + dev token), Dialog (native file dialogs), Window State (persist window size/position). Minimal Rust code; almost all logic is in the frontend.
 2. **Auth** (`src/lib/msal.ts`) — MSAL OAuth2 redirect flow for Microsoft sign-in. Has a dev token bypass (`setDevToken()`) for using Graph Explorer tokens during development because the school tenant requires admin consent for custom apps.
 3. **Graph API client** (`src/lib/graph.ts`) — Typed singleton client for all OneNote endpoints. Two access patterns: `/me/onenote/...` for personal notebooks, `/groups/{id}/onenote/...` for class notebooks discovered via `/me/memberOf`.
 4. **State** — Zustand (`src/stores/app-store.ts`) for UI/nav state + theme + hidden classes. TanStack Query for API data with 5-min stale time and lazy loading (`enabled` flags).
-5. **Settings** (`src/lib/settings.ts`) — Tauri Store plugin writes `settings.json` to the app config dir. Falls back to localStorage when running outside Tauri (browser dev). Stores: hidden group IDs, theme ID, theme mode.
+5. **Settings** (`src/lib/settings.ts`) — Tauri Store plugin writes `settings.json` to the app config dir. Falls back to localStorage when running outside Tauri (browser dev). Stores: hidden group IDs, theme ID, theme mode, animation toggle, dev token, panel widths.
+7. **Query cache** (`src/lib/query-cache.ts`) — Persists TanStack Query navigation data (notebooks, sections, pages) to `cache.json` via Tauri Store. Restores on startup for instant loading. Excludes page HTML content. Auto-persists every 2 minutes + on unload. 24-hour max age.
 6. **Themes** (`src/lib/themes.ts`) — 17 built-in themes. `applyTheme()` sets CSS custom properties on `document.documentElement` at runtime, overriding Tailwind v4 defaults from `@theme` in index.css.
 
 ### Component hierarchy
 
 ```
-App.tsx (MSAL init → auth gate → QueryClientProvider → system theme listener)
+App.tsx (MSAL init → auth gate → QueryClientProvider → cache restore → system theme listener)
+├── Titlebar (custom window controls: minimize/maximize/close, drag region)
 ├── LoginScreen (redirect auth + dev token paste)
-└── Sidebar → SectionList → PageList (nested, lazy-loaded)
-    PageViewer (OneNote HTML renderer with image auth)
-    ClassManager (tabbed settings modal: Classes + Appearance)
-      └── ThemePicker (theme cards + light/dark/system toggle)
+└── ErrorBoundary
+    ├── Sidebar → SectionList (nested, lazy-loaded, animated expand)
+    ├── ErrorBoundary → PagePanel (page list with dates, staggered animation)
+    ├── ErrorBoundary → PageViewer (OneNote HTML renderer with image auth, checkboxes, tags, file cards)
+    └── ClassManager (tabbed settings modal: Classes + Appearance)
+          └── ThemePicker (theme cards + light/dark/system toggle + animations toggle)
 ```
 
 Selecting a parent in navigation cascades: choosing a notebook clears section/page selection.
@@ -126,11 +130,10 @@ Images in page HTML have Graph API URLs: `https://graph.microsoft.com/v1.0/group
 
 ## Current Status (v0.1)
 
-**Working:** Auth (dev token), notebook/section/page navigation, read-only page viewer with image auth, class visibility management, 17 themes with light/dark/system, persistent settings via Tauri Store.
+**Working:** Auth (dev token + MSAL with auto-refresh), 3-pane layout, page viewer with checkboxes/tags/file cards/video embeds, class visibility management, 17 themes with light/dark/system, glassmorphism UI with animations (toggleable), custom titlebar, persistent query cache, window state persistence, error boundaries, pagination for 20+ page sections.
 
 **Next priorities:**
-1. 3-pane layout (notebooks | sections+pages | content) to match OneNote UX
-2. Page content rendering polish (tables, checkboxes, highlighted blocks)
-3. Client-side search across cached page titles
-4. Keyboard shortcuts + command palette
-5. Editing (TipTap + PATCH API) — v0.2 milestone
+1. Client-side search across cached page titles
+2. Keyboard shortcuts + command palette
+3. System tray + auto-updater
+4. Editing (TipTap + PATCH API) — v0.2 milestone

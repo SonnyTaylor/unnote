@@ -22,14 +22,14 @@ export function LoginScreen() {
     }
   };
 
-  const handleDevToken = () => {
+  const handleDevToken = async () => {
     if (!tokenInput.trim()) return;
-    setDevToken(tokenInput.trim());
+    await setDevToken(tokenInput.trim());
     setAuth(true, "Dev Mode");
   };
 
   return (
-    <div className="relative flex h-screen items-center justify-center overflow-hidden bg-background">
+    <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-background">
       {/* Background gradient orbs for depth */}
       <div className="absolute inset-0 overflow-hidden">
         <div

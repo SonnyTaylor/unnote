@@ -7,6 +7,7 @@ export interface AppSettings {
   sidebarWidth: number;
   pagePanelWidth: number;
   animationsEnabled: boolean;
+  devToken: string;
 }
 
 const DEFAULTS: AppSettings = {
@@ -16,6 +17,7 @@ const DEFAULTS: AppSettings = {
   sidebarWidth: 208,
   pagePanelWidth: 224,
   animationsEnabled: true,
+  devToken: "",
 };
 
 let store: Awaited<ReturnType<typeof load>> | null = null;
