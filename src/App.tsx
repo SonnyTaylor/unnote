@@ -13,6 +13,7 @@ import { ClassManager } from "@/components/class-manager";
 import { ResizeHandle } from "@/components/resize-handle";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { Titlebar } from "@/components/titlebar";
+import { CommandPalette } from "@/components/command-palette";
 import { Loader2 } from "lucide-react";
 
 const SIDEBAR_MIN = 140;
@@ -61,6 +62,24 @@ export default function App() {
     setPagePanelWidth,
     savePanelWidths,
   } = useAppStore();
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Ctrl+, → Settings
+      if ((e.ctrlKey || e.metaKey) && e.key === ",") {
+        e.preventDefault();
+        useAppStore.getState().setShowSettings(true);
+      }
+      // Ctrl+B → Toggle sidebar
+      if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+        e.preventDefault();
+        useAppStore.getState().toggleSidebar();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   // Wire up auth failure handler so expired tokens trigger logout
   useEffect(() => {
@@ -166,6 +185,7 @@ export default function App() {
               <PageViewer />
             </ErrorBoundary>
             <ClassManager />
+            <CommandPalette />
           </div>
         </ErrorBoundary>
       </div>
