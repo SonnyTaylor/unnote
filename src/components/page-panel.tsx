@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { graphClient } from "@/lib/graph";
+import { graphClient, queryKeys } from "@/lib/graph";
 import { useAppStore } from "@/stores/app-store";
 import { FilePlus, Loader2, FileText } from "lucide-react";
 
@@ -25,18 +25,16 @@ function formatShortDate(dateStr: string): string {
 export function PagePanel({ width }: { width: number }) {
   const { selectedSection, selectedPage, setSelectedPage, animationsEnabled } = useAppStore();
 
-  const groupId = (selectedSection as any)?.groupId as string | undefined;
+  const groupId = selectedSection?.groupId;
 
   const { data: pages, isLoading } = useQuery({
-    queryKey: ["pages", selectedSection?.id, groupId],
+    queryKey: queryKeys.pages(selectedSection?.id ?? "", groupId),
     queryFn: async () => {
       if (!selectedSection) return [];
       if (groupId) {
-        const res = await graphClient.getGroupSectionPages(groupId, selectedSection.id);
-        return res.value;
+        return graphClient.getGroupSectionPages(groupId, selectedSection.id);
       }
-      const res = await graphClient.getSectionPages(selectedSection.id);
-      return res.value;
+      return graphClient.getSectionPages(selectedSection.id);
     },
     enabled: !!selectedSection,
   });

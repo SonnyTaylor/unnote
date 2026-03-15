@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { graphClient } from "@/lib/graph";
+import { graphClient, queryKeys } from "@/lib/graph";
 import { useAppStore } from "@/stores/app-store";
 import { X, Eye, EyeOff, Loader2, GraduationCap, Palette } from "lucide-react";
 import { useState } from "react";
@@ -18,7 +18,7 @@ export function ClassManager() {
   const [activeTab, setActiveTab] = useState<Tab>("classes");
 
   const { data: allClassGroups, isLoading } = useQuery({
-    queryKey: ["all-class-groups"],
+    queryKey: queryKeys.allClassGroups,
     queryFn: async () => {
       const groups = await graphClient.getUserGroups();
       return groups.value

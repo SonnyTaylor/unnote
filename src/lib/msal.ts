@@ -1,4 +1,4 @@
-import { PublicClientApplication, type Configuration } from "@azure/msal-browser";
+import { PublicClientApplication, type Configuration, InteractionRequiredAuthError } from "@azure/msal-browser";
 
 const msalConfig: Configuration = {
   auth: {
@@ -35,6 +35,10 @@ export function clearDevToken() {
   localStorage.removeItem("unnote_dev_token");
 }
 
+export function hasDevToken(): boolean {
+  return !!(devToken || localStorage.getItem("unnote_dev_token"));
+}
+
 export async function getAccessToken(): Promise<string | null> {
   // Check dev token first
   if (devToken) return devToken;
@@ -54,7 +58,20 @@ export async function getAccessToken(): Promise<string | null> {
       account: accounts[0],
     });
     return response.accessToken;
-  } catch {
+  } catch (error) {
+    // If silent renewal fails (token expired, etc.), try interactive
+    if (error instanceof InteractionRequiredAuthError) {
+      try {
+        await msalInstance.acquireTokenRedirect({
+          ...loginRequest,
+          account: accounts[0],
+        });
+        // acquireTokenRedirect doesn't return directly — page will reload
+      } catch {
+        // Interactive auth failed
+      }
+      return null;
+    }
     return null;
   }
 }

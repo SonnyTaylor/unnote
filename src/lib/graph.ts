@@ -40,6 +40,22 @@ class GraphClient {
     return id.replace(/!/g, "%21");
   }
 
+  /**
+   * Fetch all pages from a paginated endpoint, following @odata.nextLink.
+   */
+  private async getAllPages(endpoint: string): Promise<Page[]> {
+    const all: Page[] = [];
+    let url: string | undefined = endpoint;
+
+    while (url) {
+      const res: GraphCollection<Page> = await this.get<GraphCollection<Page>>(url);
+      all.push(...res.value);
+      url = res["@odata.nextLink"];
+    }
+
+    return all;
+  }
+
   // --- User ---
   async getMe() {
     return this.get<GraphUser>("/me");
@@ -82,7 +98,7 @@ class GraphClient {
   }
 
   async getGroupSectionPages(groupId: string, sectionId: string, top = 100) {
-    return this.get<GraphCollection<Page>>(
+    return this.getAllPages(
       `/groups/${groupId}/onenote/sections/${sectionId}/pages?$top=${top}`
     );
   }
@@ -101,7 +117,7 @@ class GraphClient {
   }
 
   async getSectionPages(sectionId: string, top = 100) {
-    return this.get<GraphCollection<Page>>(
+    return this.getAllPages(
       `/me/onenote/sections/${sectionId}/pages?$top=${top}`
     );
   }
@@ -122,7 +138,32 @@ class GraphClient {
 
 export const graphClient = new GraphClient();
 
+// --- Query Key Constants ---
+export const queryKeys = {
+  personalNotebooks: ["personal-notebooks"] as const,
+  classNotebooks: ["class-notebooks"] as const,
+  allClassGroups: ["all-class-groups"] as const,
+  sectionGroups: (notebookId: string, groupId?: string) =>
+    ["section-groups", notebookId, groupId] as const,
+  topSections: (notebookId: string) =>
+    ["top-sections", notebookId] as const,
+  sgSections: (sectionGroupId: string, groupId?: string) =>
+    ["sg-sections", sectionGroupId, groupId] as const,
+  pages: (sectionId: string, groupId?: string) =>
+    ["pages", sectionId, groupId] as const,
+  pageContent: (pageId: string, groupId?: string) =>
+    ["page-content", pageId, groupId] as const,
+};
+
 // --- Types ---
+
+/**
+ * groupId is attached to notebooks, sections, and pages that belong to
+ * a class group (as opposed to personal /me/onenote resources).
+ * When groupId is present, Graph API calls go through /groups/{groupId}/...
+ */
+export type WithGroupId<T> = T & { groupId?: string };
+
 export interface GraphCollection<T> {
   "@odata.context"?: string;
   "@odata.nextLink"?: string;

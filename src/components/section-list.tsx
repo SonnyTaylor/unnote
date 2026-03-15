@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { graphClient, type Section, type SectionGroup } from "@/lib/graph";
+import { graphClient, queryKeys, type Section, type SectionGroup, type WithGroupId } from "@/lib/graph";
 import { useAppStore } from "@/stores/app-store";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { useState } from "react";
@@ -40,10 +40,10 @@ export function SectionList({ notebookColor: _notebookColor }: { notebookColor?:
   const { selectedNotebook, selectedSection, setSelectedSection, setSelectedSectionGroup, animationsEnabled } =
     useAppStore();
 
-  const groupId = (selectedNotebook as any)?.groupId as string | undefined;
+  const groupId = selectedNotebook?.groupId;
 
   const { data: sectionGroups, isLoading: loadingSG } = useQuery({
-    queryKey: ["section-groups", selectedNotebook?.id, groupId],
+    queryKey: queryKeys.sectionGroups(selectedNotebook?.id ?? "", groupId),
     queryFn: async () => {
       if (!selectedNotebook) return [];
       if (groupId) {
@@ -60,7 +60,7 @@ export function SectionList({ notebookColor: _notebookColor }: { notebookColor?:
   });
 
   const { data: topSections, isLoading: loadingSections } = useQuery({
-    queryKey: ["top-sections", selectedNotebook?.id],
+    queryKey: queryKeys.topSections(selectedNotebook?.id ?? ""),
     queryFn: async () => {
       if (!selectedNotebook) return [];
       const res = await graphClient.getNotebookSections(selectedNotebook.id);
@@ -94,7 +94,8 @@ export function SectionList({ notebookColor: _notebookColor }: { notebookColor?:
           animate={animationsEnabled}
           onSelectSection={(section) => {
             setSelectedSectionGroup(sg);
-            setSelectedSection(groupId ? { ...section, groupId } : section);
+            const withGroup: WithGroupId<Section> = groupId ? { ...section, groupId } : section;
+            setSelectedSection(withGroup);
           }}
         />
       ))}
@@ -162,7 +163,7 @@ function SectionGroupItem({
   const [expanded, setExpanded] = useState(false);
 
   const { data: sections, isLoading } = useQuery({
-    queryKey: ["sg-sections", sectionGroup.id, groupId],
+    queryKey: queryKeys.sgSections(sectionGroup.id, groupId),
     queryFn: async () => {
       if (groupId) {
         const res = await graphClient.getGroupSectionGroupSections(groupId, sectionGroup.id);

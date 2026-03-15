@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { graphClient } from "@/lib/graph";
+import { graphClient, queryKeys } from "@/lib/graph";
 import { useAppStore } from "@/stores/app-store";
 import { Loader2 } from "lucide-react";
 import DOMPurify from "dompurify";
@@ -187,10 +187,10 @@ export function PageViewer() {
   const { selectedPage, animationsEnabled } = useAppStore();
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const groupId = (selectedPage as any)?.groupId as string | undefined;
+  const groupId = selectedPage?.groupId;
 
   const { data: html, isLoading } = useQuery({
-    queryKey: ["page-content", selectedPage?.id, groupId],
+    queryKey: queryKeys.pageContent(selectedPage?.id ?? "", groupId),
     queryFn: async () => {
       if (!selectedPage) return null;
       if (groupId) {

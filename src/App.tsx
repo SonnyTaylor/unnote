@@ -9,6 +9,7 @@ import { PageViewer } from "@/components/page-viewer";
 import { LoginScreen } from "@/components/login-screen";
 import { ClassManager } from "@/components/class-manager";
 import { ResizeHandle } from "@/components/resize-handle";
+import { ErrorBoundary } from "@/components/error-boundary";
 import { Loader2 } from "lucide-react";
 
 const SIDEBAR_MIN = 140;
@@ -20,7 +21,9 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // Keep unused data for 30 minutes
       retry: 2,
+      refetchOnWindowFocus: false,
     },
   },
 });
@@ -63,10 +66,12 @@ export default function App() {
         // Redirect handling failed
       }
 
-      // Check if already logged in
+      // Check if already logged in (MSAL localStorage cache or dev token)
       const accounts = msalInstance.getAllAccounts();
       if (accounts.length > 0) {
         setAuth(true, accounts[0].name ?? accounts[0].username);
+      } else if (localStorage.getItem("unnote_dev_token")) {
+        setAuth(true, "Dev Mode");
       }
       setInitializing(false);
     });
@@ -86,24 +91,30 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex h-screen overflow-hidden bg-background">
-        <Sidebar width={sidebarWidth} />
-        <ResizeHandle
-          onDelta={(d) =>
-            setSidebarWidth(Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, useAppStore.getState().sidebarWidth + d)))
-          }
-          onEnd={savePanelWidths}
-        />
-        <PagePanel width={pagePanelWidth} />
-        <ResizeHandle
-          onDelta={(d) =>
-            setPagePanelWidth(Math.max(PANEL_MIN, Math.min(PANEL_MAX, useAppStore.getState().pagePanelWidth + d)))
-          }
-          onEnd={savePanelWidths}
-        />
-        <PageViewer />
-        <ClassManager />
-      </div>
+      <ErrorBoundary>
+        <div className="flex h-screen overflow-hidden bg-background">
+          <Sidebar width={sidebarWidth} />
+          <ResizeHandle
+            onDelta={(d) =>
+              setSidebarWidth(Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, useAppStore.getState().sidebarWidth + d)))
+            }
+            onEnd={savePanelWidths}
+          />
+          <ErrorBoundary>
+            <PagePanel width={pagePanelWidth} />
+          </ErrorBoundary>
+          <ResizeHandle
+            onDelta={(d) =>
+              setPagePanelWidth(Math.max(PANEL_MIN, Math.min(PANEL_MAX, useAppStore.getState().pagePanelWidth + d)))
+            }
+            onEnd={savePanelWidths}
+          />
+          <ErrorBoundary>
+            <PageViewer />
+          </ErrorBoundary>
+          <ClassManager />
+        </div>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }

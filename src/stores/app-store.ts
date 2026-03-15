@@ -1,13 +1,7 @@
 import { create } from "zustand";
-import type { Notebook, Section, SectionGroup, Page } from "@/lib/graph";
+import type { Notebook, Section, SectionGroup, Page, WithGroupId } from "@/lib/graph";
 import { getSetting, setSetting } from "@/lib/settings";
 import { applyTheme } from "@/lib/themes";
-
-export interface ClassNotebookInfo {
-  groupId: string;
-  groupName: string;
-  notebook: Notebook;
-}
 
 interface AppState {
   // Auth
@@ -16,15 +10,15 @@ interface AppState {
   setAuth: (authenticated: boolean, name?: string) => void;
 
   // Navigation
-  selectedNotebook: (Notebook & { groupId?: string }) | null;
+  selectedNotebook: WithGroupId<Notebook> | null;
   selectedSectionGroup: SectionGroup | null;
-  selectedSection: (Section & { groupId?: string }) | null;
-  selectedPage: (Page & { groupId?: string }) | null;
+  selectedSection: WithGroupId<Section> | null;
+  selectedPage: WithGroupId<Page> | null;
 
-  setSelectedNotebook: (notebook: (Notebook & { groupId?: string }) | null) => void;
+  setSelectedNotebook: (notebook: WithGroupId<Notebook> | null) => void;
   setSelectedSectionGroup: (group: SectionGroup | null) => void;
-  setSelectedSection: (section: (Section & { groupId?: string }) | null) => void;
-  setSelectedPage: (page: (Page & { groupId?: string }) | null) => void;
+  setSelectedSection: (section: WithGroupId<Section> | null) => void;
+  setSelectedPage: (page: WithGroupId<Page> | null) => void;
 
   // Sidebar
   sidebarOpen: boolean;

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { graphClient, type Notebook } from "@/lib/graph";
+import { graphClient, queryKeys, type Notebook, type WithGroupId } from "@/lib/graph";
 import { useAppStore } from "@/stores/app-store";
 import { SectionList } from "./section-list";
 import {
@@ -72,7 +72,7 @@ export function Sidebar({ width }: { width: number }) {
     isLoading: loadingPersonal,
     error: personalError,
   } = useQuery({
-    queryKey: ["personal-notebooks"],
+    queryKey: queryKeys.personalNotebooks,
     queryFn: async () => {
       const res = await graphClient.getPersonalNotebooks();
       return res.value;
@@ -84,7 +84,7 @@ export function Sidebar({ width }: { width: number }) {
     isLoading: loadingClasses,
     error: classError,
   } = useQuery({
-    queryKey: ["class-notebooks"],
+    queryKey: queryKeys.classNotebooks,
     queryFn: async () => {
       const groups = await graphClient.getUserGroups();
       const classGroups = groups.value.filter(
@@ -133,7 +133,7 @@ export function Sidebar({ width }: { width: number }) {
   }
 
   const allPersonal = personalNotebooks ?? [];
-  const allClass = visibleClassNotebooks.map((cn) => ({
+  const allClass: WithGroupId<Notebook>[] = visibleClassNotebooks.map((cn) => ({
     ...cn.notebook,
     groupId: cn.groupId,
   }));
@@ -263,13 +263,12 @@ function NotebookItem({
   onSelect,
   animate,
 }: {
-  notebook: Notebook & { groupId?: string };
+  notebook: WithGroupId<Notebook>;
   color: string;
   isSelected: boolean;
   onSelect: () => void;
   animate: boolean;
 }) {
-  // Track whether the section list has been rendered (to avoid animating initial mount)
   const hasRendered = useRef(false);
   useEffect(() => {
     hasRendered.current = true;
@@ -285,7 +284,6 @@ function NotebookItem({
             : "text-sidebar-foreground/80 hover:bg-white/15 dark:hover:bg-white/6"
         }`}
       >
-        {/* Colored notebook icon */}
         <div
           className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-md shadow-sm"
           style={{
@@ -305,7 +303,6 @@ function NotebookItem({
         />
       </button>
 
-      {/* Section tree expands with animation */}
       <AnimatedExpand open={isSelected} animate={animate && hasRendered.current}>
         <div className="mb-1">
           <SectionList notebookColor={color} />
