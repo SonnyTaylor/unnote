@@ -11,6 +11,7 @@ import {
   LogOut,
   AlertCircle,
   Settings,
+  BookOpen,
 } from "lucide-react";
 import { clearDevToken } from "@/lib/msal";
 
@@ -122,41 +123,46 @@ export function Sidebar({ width }: { width: number }) {
   }));
 
   return (
-    <aside className="flex h-full flex-col border-r border-sidebar-border bg-sidebar-background overflow-hidden" style={{ width, minWidth: width }}>
+    <aside
+      className="surface-mica surface-sheen flex h-full flex-col overflow-hidden"
+      style={{ width, minWidth: width }}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-sidebar-border px-3 py-2.5">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-4 py-3.5">
+        <div className="flex items-center gap-2.5">
           <img src="/unnote.svg" alt="UnNote" className="h-5 w-5" />
-          <span className="text-sm font-semibold text-sidebar-foreground">UnNote</span>
+          <span className="text-[13px] font-semibold text-sidebar-foreground tracking-tight">
+            UnNote
+          </span>
         </div>
         <div className="flex items-center gap-0.5">
           <button
             onClick={() => setShowSettings(true)}
-            className="rounded p-1.5 hover:bg-sidebar-accent transition-colors"
+            className="rounded-md p-1.5 hover:bg-white/20 dark:hover:bg-white/10"
             title="Settings"
           >
-            <Settings className="h-3.5 w-3.5 text-sidebar-foreground/60" />
+            <Settings className="h-4 w-4 text-sidebar-foreground/50" />
           </button>
           <button
             onClick={toggleSidebar}
-            className="rounded p-1.5 hover:bg-sidebar-accent transition-colors"
+            className="rounded-md p-1.5 hover:bg-white/20 dark:hover:bg-white/10"
             title="Collapse sidebar"
           >
-            <PanelLeftClose className="h-3.5 w-3.5 text-sidebar-foreground/60" />
+            <PanelLeftClose className="h-4 w-4 text-sidebar-foreground/50" />
           </button>
         </div>
       </div>
 
       {/* Notebook list */}
-      <div className="flex-1 overflow-y-auto py-1.5">
+      <div className="flex-1 overflow-y-auto px-2.5 pb-2">
         {/* Personal notebooks */}
         {loadingPersonal ? (
-          <SectionLabel label="Personal" loading />
+          <SectionLabel label="Notebooks" loading />
         ) : personalError ? (
           <ErrorRow message="Failed to load notebooks" />
         ) : allPersonal.length > 0 ? (
           <>
-            <SectionLabel label="Personal" />
+            <SectionLabel label="Notebooks" />
             {allPersonal.map((nb, i) => (
               <NotebookItem
                 key={nb.id}
@@ -171,12 +177,12 @@ export function Sidebar({ width }: { width: number }) {
 
         {/* Class notebooks */}
         {loadingClasses ? (
-          <SectionLabel label="Classes" loading />
+          <SectionLabel label="Class Notebooks" loading />
         ) : classError ? (
           <ErrorRow message="Failed to load classes" />
         ) : allClass.length > 0 ? (
           <>
-            <SectionLabel label="Classes" />
+            <SectionLabel label="Class Notebooks" />
             {allClass.map((nb, i) => (
               <NotebookItem
                 key={nb.id}
@@ -189,7 +195,7 @@ export function Sidebar({ width }: { width: number }) {
             {hiddenCount > 0 && (
               <button
                 onClick={() => setShowSettings(true)}
-                className="mx-2 mt-1 text-[11px] text-muted-foreground hover:text-sidebar-foreground transition-colors"
+                className="ml-2 mt-1.5 text-[11px] text-muted-foreground hover:text-primary"
               >
                 +{hiddenCount} hidden
               </button>
@@ -199,10 +205,10 @@ export function Sidebar({ width }: { width: number }) {
       </div>
 
       {/* Footer */}
-      <div className="border-t border-sidebar-border px-2 py-2">
+      <div className="border-t border-white/10 px-3 py-2.5">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+          className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-[12px] text-muted-foreground hover:bg-white/15 dark:hover:bg-white/8 hover:text-sidebar-foreground"
         >
           <LogOut className="h-3.5 w-3.5" />
           Sign out
@@ -214,9 +220,9 @@ export function Sidebar({ width }: { width: number }) {
 
 function SectionLabel({ label, loading }: { label: string; loading?: boolean }) {
   return (
-    <div className="flex items-center gap-1.5 px-3 pb-0.5 pt-2.5">
-      {loading && <Loader2 className="h-2.5 w-2.5 animate-spin text-muted-foreground" />}
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+    <div className="flex items-center gap-1.5 px-2 pb-1 pt-4 first:pt-1">
+      {loading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
         {label}
       </span>
     </div>
@@ -226,7 +232,7 @@ function SectionLabel({ label, loading }: { label: string; loading?: boolean }) 
 function ErrorRow({ message }: { message: string }) {
   return (
     <div className="flex items-center gap-2 px-3 py-2 text-xs text-destructive">
-      <AlertCircle className="h-3 w-3" />
+      <AlertCircle className="h-3.5 w-3.5" />
       {message}
     </div>
   );
@@ -247,25 +253,27 @@ function NotebookItem({
     <div>
       <button
         onClick={onSelect}
-        className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 mx-1 text-xs transition-colors ${
+        className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-[13px] ${
           isSelected
-            ? "bg-sidebar-accent text-sidebar-foreground"
-            : "text-sidebar-foreground hover:bg-sidebar-accent/60"
+            ? "bg-white/25 dark:bg-white/10 text-sidebar-foreground font-medium shadow-sm"
+            : "text-sidebar-foreground/80 hover:bg-white/15 dark:hover:bg-white/6"
         }`}
-        style={{ width: "calc(100% - 8px)" }}
       >
         {/* Colored notebook icon */}
-        <span
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-[9px] font-bold text-white"
-          style={{ backgroundColor: color }}
+        <div
+          className="flex h-[24px] w-[24px] shrink-0 items-center justify-center rounded-md shadow-sm"
+          style={{
+            backgroundColor: color,
+            boxShadow: `0 1px 3px ${color}40`,
+          }}
         >
-          {notebook.displayName.charAt(0).toUpperCase()}
-        </span>
+          <BookOpen className="h-3 w-3 text-white" />
+        </div>
         <span className="flex-1 truncate text-left">{notebook.displayName}</span>
         {isSelected ? (
-          <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-sidebar-foreground/40" />
         ) : (
-          <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-sidebar-foreground/30" />
         )}
       </button>
 

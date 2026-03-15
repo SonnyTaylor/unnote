@@ -53,26 +53,26 @@ export function ClassManager() {
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="mx-4 w-full max-w-md rounded-xl border border-border bg-background shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="surface-glass surface-sheen mx-4 w-full max-w-md rounded-2xl border border-border/50 shadow-2xl shadow-black/20">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-4">
-          <h2 className="text-base font-semibold">Settings</h2>
+        <div className="flex items-center justify-between border-b border-border/40 px-6 py-4">
+          <h2 className="text-[15px] font-semibold tracking-tight">Settings</h2>
           <button
             onClick={() => setShowSettings(false)}
-            className="rounded-md p-1.5 hover:bg-accent transition-colors"
+            className="rounded-lg p-1.5 hover:bg-white/20 dark:hover:bg-white/10"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-border px-5">
+        <div className="flex border-b border-border/40 px-6">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 border-b-2 px-3 py-2.5 text-[13px] font-medium ${
                 activeTab === tab.id
                   ? "border-primary text-primary"
                   : "border-transparent text-muted-foreground hover:text-foreground"
@@ -85,21 +85,21 @@ export function ClassManager() {
         </div>
 
         {/* Content */}
-        <div className="max-h-[60vh] overflow-y-auto px-5 py-4">
+        <div className="max-h-[60vh] overflow-y-auto px-6 py-5">
           {activeTab === "classes" && (
             <>
-              <p className="mb-4 text-sm text-muted-foreground">
+              <p className="mb-4 text-[13px] text-muted-foreground leading-relaxed">
                 Choose which classes appear in your sidebar. Hidden classes can be shown again anytime.
               </p>
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-5 w-5 animate-spin text-primary/50" />
                 </div>
               ) : (
                 sortedYears.map((year) => (
-                  <div key={year} className="mb-4">
-                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <div key={year} className="mb-5">
+                    <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                       {year}
                     </h3>
                     <div className="space-y-1">
@@ -114,18 +114,18 @@ export function ClassManager() {
                           <button
                             key={group.id}
                             onClick={() => toggleHiddenGroup(group.id)}
-                            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                            className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-[13px] ${
                               hidden
-                                ? "text-muted-foreground hover:bg-accent"
-                                : "text-foreground bg-accent/50 hover:bg-accent"
+                                ? "text-muted-foreground hover:bg-white/15 dark:hover:bg-white/6"
+                                : "text-foreground bg-white/30 dark:bg-white/8 hover:bg-white/40 dark:hover:bg-white/12 shadow-sm"
                             }`}
                           >
                             {hidden ? (
-                              <EyeOff className="h-4 w-4 shrink-0 text-muted-foreground" />
+                              <EyeOff className="h-4 w-4 shrink-0 text-muted-foreground/60" />
                             ) : (
                               <Eye className="h-4 w-4 shrink-0 text-primary" />
                             )}
-                            <span className={hidden ? "line-through opacity-60" : ""}>
+                            <span className={hidden ? "line-through opacity-50" : ""}>
                               {cleanName}
                             </span>
                           </button>
@@ -142,10 +142,10 @@ export function ClassManager() {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-border px-5 py-3">
+        <div className="border-t border-border/40 px-6 py-4">
           <button
             onClick={() => setShowSettings(false)}
-            className="w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="w-full rounded-xl bg-primary px-4 py-2.5 text-[13px] font-medium text-primary-foreground hover:bg-primary/90 shadow-sm hover:shadow-md hover:shadow-primary/20"
           >
             Done
           </button>

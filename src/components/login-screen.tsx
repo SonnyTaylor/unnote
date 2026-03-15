@@ -29,12 +29,35 @@ export function LoginScreen() {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-8 max-w-sm text-center">
-        <div className="flex flex-col items-center gap-3">
-          <img src="/unnote.svg" alt="UnNote" className="h-20 w-20" />
-          <h1 className="text-4xl font-bold text-foreground">UnNote</h1>
-          <p className="text-muted-foreground text-lg">
+    <div className="relative flex h-screen items-center justify-center overflow-hidden bg-background">
+      {/* Background gradient orbs for depth */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div
+          className="absolute -top-1/4 -left-1/4 w-[600px] h-[600px] rounded-full opacity-[0.07]"
+          style={{
+            background: "radial-gradient(circle, hsl(271 72% 50%) 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="absolute -bottom-1/4 -right-1/4 w-[500px] h-[500px] rounded-full opacity-[0.05]"
+          style={{
+            background: "radial-gradient(circle, hsl(271 72% 60%) 0%, transparent 70%)",
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 flex flex-col items-center gap-10 max-w-sm text-center px-6">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <img src="/unnote.svg" alt="UnNote" className="h-20 w-20 relative z-10" />
+            {/* Glow behind logo */}
+            <div
+              className="absolute inset-0 blur-2xl opacity-30 scale-150"
+              style={{ background: "hsl(271 72% 50%)" }}
+            />
+          </div>
+          <h1 className="text-4xl font-bold text-foreground tracking-tight">UnNote</h1>
+          <p className="text-muted-foreground text-[15px] leading-relaxed">
             A better OneNote experience, everywhere.
           </p>
         </div>
@@ -42,12 +65,12 @@ export function LoginScreen() {
         <button
           onClick={handleLogin}
           disabled={loading}
-          className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-primary-foreground font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          className="surface-glass surface-sheen flex items-center gap-2.5 rounded-xl border border-primary/20 px-7 py-3.5 text-[15px] font-medium text-foreground hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 disabled:opacity-50"
         >
           {loading ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
-            <LogIn className="h-5 w-5" />
+            <LogIn className="h-5 w-5 text-primary" />
           )}
           Sign in with Microsoft
         </button>
@@ -57,10 +80,10 @@ export function LoginScreen() {
         )}
 
         {/* Dev token input for bypassing admin consent */}
-        <div className="mt-4 w-full">
+        <div className="w-full">
           <button
             onClick={() => setShowDevInput(!showDevInput)}
-            className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors mx-auto"
+            className="flex items-center gap-2 text-xs text-muted-foreground/60 hover:text-muted-foreground mx-auto"
           >
             <Terminal className="h-3 w-3" />
             Dev: Use Graph Explorer token
@@ -72,12 +95,12 @@ export function LoginScreen() {
                 value={tokenInput}
                 onChange={(e) => setTokenInput(e.target.value)}
                 placeholder="Paste access token from Graph Explorer..."
-                className="w-full h-20 rounded-md border border-input bg-background px-3 py-2 text-xs font-mono resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                className="surface-glass w-full h-20 rounded-lg border border-border/60 px-3 py-2 text-xs font-mono resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40"
               />
               <button
                 onClick={handleDevToken}
                 disabled={!tokenInput.trim()}
-                className="w-full rounded-md bg-secondary px-4 py-2 text-sm text-secondary-foreground hover:bg-secondary/80 transition-colors disabled:opacity-50"
+                className="w-full rounded-lg bg-primary/10 border border-primary/20 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-primary/15 disabled:opacity-50"
               >
                 Connect with token
               </button>

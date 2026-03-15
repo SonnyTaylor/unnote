@@ -12,23 +12,23 @@ function ThemePreview({ theme, isDark }: { theme: Theme; isDark: boolean }) {
   const colors = isDark ? theme.colors.dark : theme.colors.light;
   return (
     <div
-      className="flex gap-1.5 rounded-md p-2"
+      className="flex gap-1.5 rounded-lg p-2.5"
       style={{ backgroundColor: colors.background }}
     >
       <div
-        className="h-6 w-6 rounded-full"
+        className="h-5 w-5 rounded-full shadow-sm"
         style={{ backgroundColor: colors.primary }}
       />
       <div
-        className="h-6 w-6 rounded-full"
+        className="h-5 w-5 rounded-full shadow-sm"
         style={{ backgroundColor: colors.accent }}
       />
       <div
-        className="h-6 w-6 rounded-full"
+        className="h-5 w-5 rounded-full shadow-sm"
         style={{ backgroundColor: colors.secondary }}
       />
       <div
-        className="h-6 w-3 rounded-full"
+        className="h-5 w-3 rounded-full shadow-sm"
         style={{ backgroundColor: colors["sidebar-background"] }}
       />
     </div>
@@ -40,18 +40,18 @@ export function ThemePicker() {
   const previewDark = themeMode === "dark" || (themeMode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Mode toggle */}
       <div>
-        <p className="mb-2 text-sm font-medium text-foreground">Mode</p>
-        <div className="flex rounded-lg border border-border bg-muted p-1">
+        <p className="mb-2.5 text-[13px] font-medium text-foreground">Mode</p>
+        <div className="flex rounded-xl border border-border/50 bg-white/20 dark:bg-white/5 p-1">
           {MODE_OPTIONS.map(({ value, label, icon: Icon }) => (
             <button
               key={value}
               onClick={() => setThemeMode(value)}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[12px] font-medium ${
                 themeMode === value
-                  ? "bg-background text-foreground shadow-sm"
+                  ? "bg-white dark:bg-white/15 text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -64,7 +64,7 @@ export function ThemePicker() {
 
       {/* Theme grid */}
       <div>
-        <p className="mb-2 text-sm font-medium text-foreground">Theme</p>
+        <p className="mb-2.5 text-[13px] font-medium text-foreground">Theme</p>
         <div className="grid grid-cols-2 gap-2">
           {THEMES.map((theme) => {
             const isActive = currentTheme === theme.id;
@@ -72,22 +72,22 @@ export function ThemePicker() {
               <button
                 key={theme.id}
                 onClick={() => setTheme(theme.id)}
-                className={`relative rounded-xl border-2 p-3 text-left transition-all ${
+                className={`relative rounded-xl border-2 p-3 text-left ${
                   isActive
-                    ? "border-primary bg-primary/5 shadow-sm"
-                    : "border-border hover:border-primary/40 hover:bg-accent/30"
+                    ? "border-primary bg-primary/8 shadow-sm shadow-primary/10"
+                    : "border-border/40 hover:border-primary/30 hover:bg-white/20 dark:hover:bg-white/5"
                 }`}
               >
                 {isActive && (
-                  <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary">
+                  <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary shadow-sm">
                     <Check className="h-3 w-3 text-primary-foreground" />
                   </div>
                 )}
                 <ThemePreview theme={theme} isDark={previewDark} />
-                <p className="mt-2 text-sm font-medium text-foreground">
+                <p className="mt-2 text-[13px] font-medium text-foreground">
                   {theme.name}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground/70">
                   {theme.description}
                 </p>
               </button>

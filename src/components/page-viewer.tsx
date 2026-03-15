@@ -82,9 +82,9 @@ export function PageViewer() {
   if (!selectedPage) {
     return (
       <div className="flex flex-1 items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <img src="/unnote.svg" alt="UnNote" className="h-12 w-12 opacity-30" />
-          <p className="text-sm">Select a page to view</p>
+        <div className="flex flex-col items-center gap-4 text-muted-foreground/40">
+          <img src="/unnote.svg" alt="UnNote" className="h-16 w-16 opacity-20" />
+          <p className="text-sm text-muted-foreground/50">Select a page to view</p>
         </div>
       </div>
     );
@@ -93,7 +93,7 @@ export function PageViewer() {
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center bg-background">
-        <Loader2 className="h-7 w-7 animate-spin text-primary" />
+        <Loader2 className="h-6 w-6 animate-spin text-primary/50" />
       </div>
     );
   }
@@ -115,21 +115,21 @@ export function PageViewer() {
   return (
     <main className="flex flex-1 flex-col overflow-hidden bg-background">
       <div className="flex-1 overflow-y-auto">
-        {/* Page title area — matches OneNote's content-level title */}
-        <div className="mx-auto max-w-4xl px-10 pb-0 pt-8">
-          <h1 className="text-2xl font-semibold leading-tight text-foreground">
+        {/* Page title area */}
+        <div className="mx-auto max-w-4xl px-12 pb-0 pt-10">
+          <h1 className="text-[26px] font-semibold leading-tight text-foreground tracking-tight">
             {selectedPage.title || "Untitled"}
           </h1>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1.5 text-[12px] text-muted-foreground/60">
             {formatPageDate(selectedPage.lastModifiedDateTime)}
           </p>
-          <hr className="mt-3 border-border" />
+          <div className="mt-4 h-px bg-gradient-to-r from-border via-border/60 to-transparent" />
         </div>
 
         {/* OneNote HTML content */}
         <div
           ref={contentRef}
-          className="onenote-content mx-auto max-w-4xl px-10 py-6"
+          className="onenote-content mx-auto max-w-4xl px-12 py-6"
           style={{ fontFamily: 'Calibri, "Segoe UI", system-ui, sans-serif', fontSize: "14.5px" }}
           dangerouslySetInnerHTML={{ __html: sanitized }}
         />
