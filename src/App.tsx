@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { msalInstance, loadDevToken } from "@/lib/msal";
+import { graphClient } from "@/lib/graph";
 import { useAppStore } from "@/stores/app-store";
 import { applyTheme } from "@/lib/themes";
 import { persistQueryCache, restoreQueryCache } from "@/lib/query-cache";
@@ -60,6 +61,12 @@ export default function App() {
     setPagePanelWidth,
     savePanelWidths,
   } = useAppStore();
+
+  // Wire up auth failure handler so expired tokens trigger logout
+  useEffect(() => {
+    graphClient.onAuthFailure = () => setAuth(false);
+    return () => { graphClient.onAuthFailure = null; };
+  }, [setAuth]);
 
   // Re-apply theme when system preference changes (for "system" mode)
   useEffect(() => {

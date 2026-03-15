@@ -27,6 +27,10 @@ export const loginRequest = {
 // Stored in Tauri Store (falls back to localStorage) instead of plain localStorage
 let devToken: string | null = null;
 
+export function hasDevToken(): boolean {
+  return !!devToken;
+}
+
 export async function setDevToken(token: string) {
   devToken = token;
   await setSetting("devToken", token);

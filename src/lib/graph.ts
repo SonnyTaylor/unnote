@@ -1,15 +1,18 @@
-import { getAccessToken } from "./msal";
+import { getAccessToken, clearDevToken, hasDevToken } from "./msal";
 
 const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 
 class GraphClient {
+  /** Callback set by the app to handle auth failures (e.g. log out) */
+  onAuthFailure: (() => void) | null = null;
+
   private async fetch(endpoint: string, options?: RequestInit): Promise<Response> {
     const token = await getAccessToken();
     if (!token) throw new Error("Not authenticated");
 
     const url = endpoint.startsWith("http") ? endpoint : `${GRAPH_BASE}${endpoint}`;
 
-    return fetch(url, {
+    const response = await fetch(url, {
       ...options,
       headers: {
         Authorization: `Bearer ${token}`,
@@ -17,6 +20,15 @@ class GraphClient {
         ...options?.headers,
       },
     });
+
+    // If we get a 401 with a dev token, it's expired — clear it and log out
+    if (response.status === 401 && hasDevToken()) {
+      await clearDevToken();
+      this.onAuthFailure?.();
+      throw new Error("Token expired. Please sign in again.");
+    }
+
+    return response;
   }
 
   private async get<T>(endpoint: string): Promise<T> {
