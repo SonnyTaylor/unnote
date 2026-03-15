@@ -28,6 +28,161 @@ function formatPageDate(dateStr: string): string {
   });
 }
 
+/** Map OneNote data-tag values to emoji icons for visual rendering */
+const TAG_ICONS: Record<string, string> = {
+  "important": "❗",
+  "critical": "🔴",
+  "question": "❓",
+  "highlight": "💡",
+  "contact": "👤",
+  "address": "📍",
+  "phone-number": "📞",
+  "web-site-to-visit": "🔗",
+  "idea": "💡",
+  "password": "🔒",
+  "remember-for-later": "📌",
+  "remember-for-blog": "📝",
+  "movie-to-see": "🎬",
+  "book-to-read": "📖",
+  "music-to-listen-to": "🎵",
+  "source-for-article": "📰",
+  "send-in-email": "📧",
+  "schedule-meeting": "📅",
+  "call-back": "📞",
+  "discuss-with-person-a": "💬",
+  "discuss-with-manager": "💬",
+  "client-request": "📋",
+  "project-a": "🅰️",
+  "project-b": "🅱️",
+};
+
+/**
+ * Post-process rendered OneNote HTML to enhance:
+ * - To-do checkboxes (data-tag="to-do" / "to-do:completed")
+ * - Note tags (data-tag="important", "question", etc.)
+ * - Embedded file attachments (<object data-attachment="...">)
+ */
+function enhanceRenderedContent(container: HTMLElement) {
+  // Process data-tag elements (checkboxes + note tags)
+  const taggedElements = container.querySelectorAll("[data-tag]");
+  taggedElements.forEach((el) => {
+    const tags = (el.getAttribute("data-tag") ?? "").split(",").map((t) => t.trim());
+
+    for (const tag of tags) {
+      // Skip if already processed
+      if (el.getAttribute("data-enhanced") === "true") continue;
+
+      if (tag === "to-do" || tag === "to-do:completed") {
+        const checked = tag === "to-do:completed";
+        const checkbox = document.createElement("span");
+        checkbox.className = `onenote-checkbox ${checked ? "checked" : ""}`;
+        checkbox.setAttribute("role", "checkbox");
+        checkbox.setAttribute("aria-checked", String(checked));
+        checkbox.innerHTML = checked
+          ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="0.5" y="0.5" width="15" height="15" rx="3" fill="var(--color-primary)" stroke="var(--color-primary)"/><path d="M4 8L7 11L12 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+          : '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="0.5" y="0.5" width="15" height="15" rx="3" stroke="var(--color-border)" stroke-width="1.5"/></svg>';
+        el.insertBefore(checkbox, el.firstChild);
+        if (checked) el.classList.add("onenote-todo-done");
+      } else {
+        // Check for priority to-do variants
+        if (tag.startsWith("to-do-priority-")) {
+          const checked = tag.endsWith(":completed");
+          const priorityNum = tag.replace("to-do-priority-", "").replace(":completed", "");
+          const checkbox = document.createElement("span");
+          checkbox.className = `onenote-checkbox priority-${priorityNum} ${checked ? "checked" : ""}`;
+          checkbox.setAttribute("role", "checkbox");
+          checkbox.setAttribute("aria-checked", String(checked));
+          checkbox.innerHTML = checked
+            ? '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="0.5" y="0.5" width="15" height="15" rx="3" fill="var(--color-primary)" stroke="var(--color-primary)"/><path d="M4 8L7 11L12 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+            : '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="0.5" y="0.5" width="15" height="15" rx="3" stroke="var(--color-destructive)" stroke-width="2"/></svg>';
+          el.insertBefore(checkbox, el.firstChild);
+          if (checked) el.classList.add("onenote-todo-done");
+        } else {
+          // Regular note tag — add icon
+          const baseTag = tag.replace(":completed", "");
+          const icon = TAG_ICONS[baseTag];
+          if (icon) {
+            const badge = document.createElement("span");
+            badge.className = "onenote-tag-icon";
+            badge.textContent = icon;
+            el.insertBefore(badge, el.firstChild);
+          }
+          if (tag.endsWith(":completed")) {
+            el.classList.add("onenote-tag-done");
+          }
+        }
+      }
+    }
+    el.setAttribute("data-enhanced", "true");
+  });
+
+  // Process embedded file attachments (<object> with data-attachment)
+  const objects = container.querySelectorAll("object[data-attachment]");
+  objects.forEach((obj) => {
+    const filename = obj.getAttribute("data-attachment") ?? "File";
+    const dataUrl = obj.getAttribute("data") ?? "";
+
+    const card = document.createElement("div");
+    card.className = "onenote-file-card";
+
+    const ext = filename.split(".").pop()?.toUpperCase() ?? "FILE";
+    const iconMap: Record<string, string> = {
+      PDF: "📄", DOC: "📝", DOCX: "📝", XLS: "📊", XLSX: "📊",
+      PPT: "📊", PPTX: "📊", ZIP: "📦", RAR: "📦",
+      JPG: "🖼️", JPEG: "🖼️", PNG: "🖼️", GIF: "🖼️",
+      MP3: "🎵", WAV: "🎵", MP4: "🎬", AVI: "🎬",
+      TXT: "📄", CSV: "📊", JSON: "📄", XML: "📄",
+    };
+    const fileIcon = iconMap[ext] ?? "📎";
+
+    card.innerHTML = `
+      <span class="onenote-file-icon">${fileIcon}</span>
+      <div class="onenote-file-info">
+        <span class="onenote-file-name">${filename}</span>
+        <span class="onenote-file-type">${ext} file</span>
+      </div>
+    `;
+
+    // If we have a data URL, make it downloadable
+    if (dataUrl) {
+      card.style.cursor = "pointer";
+      card.title = `Download ${filename}`;
+      card.addEventListener("click", async () => {
+        try {
+          const token = await getAccessToken();
+          if (!token) return;
+          const response = await fetch(dataUrl, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.ok) {
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+          }
+        } catch {
+          // silently ignore
+        }
+      });
+    }
+
+    obj.replaceWith(card);
+  });
+
+  // Process embedded iframes (videos) — ensure they're responsive
+  const iframes = container.querySelectorAll("iframe[data-original-src]");
+  iframes.forEach((iframe) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "onenote-video-wrapper";
+    iframe.parentNode?.insertBefore(wrapper, iframe);
+    wrapper.appendChild(iframe);
+    iframe.setAttribute("allowfullscreen", "true");
+  });
+}
+
 export function PageViewer() {
   const { selectedPage, animationsEnabled } = useAppStore();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -46,9 +201,14 @@ export function PageViewer() {
     enabled: !!selectedPage,
   });
 
+  // Post-render: auth images + enhance content
   useEffect(() => {
     if (!contentRef.current || !html) return;
 
+    // Enhance checkboxes, tags, file attachments, videos
+    enhanceRenderedContent(contentRef.current);
+
+    // Auth Graph API images
     const images = contentRef.current.querySelectorAll("img[src*='graph.microsoft.com']");
     images.forEach(async (img) => {
       const src = img.getAttribute("src");
@@ -108,8 +268,12 @@ export function PageViewer() {
 
   const normalizedContent = normalizeOneNoteHtml(html);
   const sanitized = DOMPurify.sanitize(normalizedContent, {
-    ADD_TAGS: ["meta"],
-    ADD_ATTR: ["data-id", "data-src-type", "data-fullres-src", "data-fullres-src-type", "style"],
+    ADD_TAGS: ["meta", "object", "iframe"],
+    ADD_ATTR: [
+      "data-id", "data-src-type", "data-fullres-src", "data-fullres-src-type", "style",
+      "data-tag", "data-attachment", "data-original-src", "data-index",
+      "type", "data", "allowfullscreen",
+    ],
   });
 
   return (
