@@ -39,7 +39,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "RWT29/HemDQAR6XepyPqFr0+jCxSo5q14qBZGApAtsp1bpBbVT1+Er+D",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI1NjIyOTEzODA3RjZGMDUKUldRRmIzK0FFeWxpSllTaEJpa2NvQUh2WUZ2SFpGV1lQRjJDU2Vva2FiSys1UmVSOENiTHVCenQK",
       "endpoints": [
         "https://github.com/SonnyTaylor/unnote/releases/latest/download/latest.json"
       ]
